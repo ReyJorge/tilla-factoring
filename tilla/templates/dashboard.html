@@ -9,7 +9,8 @@
   <div class="col-6 col-lg-4 col-xl-2">
     <div class="kpi-chip">
       <div class="kpi-label">Otevřená expozice</div>
-      <div class="kpi-value text-end">{{ '{:,.0f}'.format(kpis.open_exposure_czk).replace(',', ' ') }} <span class="kpi-unit">CZK≈</span></div>
+      <div class="kpi-value text-end">{{ kpis.open_exposure_czk|cs_money }}</div>
+      <div class="kpi-sub text-end text-muted-soft small">CZK≈ (EUR × kurz)</div>
     </div>
   </div>
   <div class="col-6 col-lg-4 col-xl-2">
@@ -28,19 +29,22 @@
     <div class="kpi-chip">
       <div class="kpi-label">Nespárované platby</div>
       <div class="kpi-value text-end">{{ kpis.unmatched_count }}</div>
-      <div class="kpi-sub text-end text-muted-soft small">{{ '{:,.0f}'.format(kpis.unmatched_czk_equiv).replace(',', ' ') }} CZK≈</div>
+      <div class="kpi-sub text-end text-muted-soft small">{{ kpis.unmatched_czk_equiv|cs_money }}</div>
     </div>
   </div>
   <div class="col-6 col-lg-4 col-xl-2">
     <div class="kpi-chip">
       <div class="kpi-label">Průměrná durace aktiv</div>
-      <div class="kpi-value text-end">{{ kpis.avg_duration_open }} <span class="kpi-unit">d</span></div>
+      <div class="kpi-value text-end">{{ kpis.avg_duration_open|string|replace('.', ',') }} <span class="kpi-unit">d</span></div>
+      {% if kpis.avg_overdue_days > 0 %}
+      <div class="kpi-sub text-end text-muted-soft small">Prům. zpoždění po spl.: {{ kpis.avg_overdue_days|string|replace('.', ',') }} d</div>
+      {% endif %}
     </div>
   </div>
   <div class="col-6 col-lg-4 col-xl-2">
     <div class="kpi-chip">
-      <div class="kpi-label">Risk / Approval OK</div>
-      <div class="kpi-value text-end">{{ kpis.risk_ok_rate }}<span class="kpi-unit">%</span></div>
+      <div class="kpi-label">Risk OK rate</div>
+      <div class="kpi-value text-end">{{ kpis.risk_ok_rate|cs_pct(1) }}<span class="kpi-unit">%</span></div>
     </div>
   </div>
 </div>
@@ -48,7 +52,10 @@
 <div class="row g-4">
   <div class="col-lg-6">
     <div class="card tilla-card h-100">
-      <div class="card-header">Faktury po splatnosti</div>
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span>Faktury po splatnosti</span>
+        <a class="small" href="/finance/overdue-invoices">Zobrazit vše</a>
+      </div>
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
@@ -60,7 +67,7 @@
                 <td><a href="/invoices/{{ inv.id }}">{{ inv.variable_symbol }}</a></td>
                 <td><a href="/clients/{{ inv.client_id }}">{{ inv.client.short_name }}</a></td>
                 <td><a href="/debtors/{{ inv.debtor_id }}">{{ inv.debtor.name[:42] }}</a></td>
-                <td class="text-end text-nowrap">{{ inv.amount }} {{ inv.currency }}</td>
+                <td class="text-end text-nowrap">{{ inv.amount|cs_money(inv.currency) }}</td>
               </tr>
               {% else %}
               <tr><td colspan="5" class="text-muted p-3">Žádné po splatnosti v náhledu.</td></tr>
@@ -73,7 +80,10 @@
   </div>
   <div class="col-lg-6">
     <div class="card tilla-card h-100">
-      <div class="card-header">Faktury k finalizaci</div>
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span>Faktury k finalizaci</span>
+        <a class="small" href="/finance/finalize-candidates">Zobrazit vše</a>
+      </div>
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
@@ -83,11 +93,11 @@
               <tr>
                 <td><a href="/invoices/{{ inv.id }}">{{ inv.variable_symbol }}</a></td>
                 <td><a href="/clients/{{ inv.client_id }}">{{ inv.client.short_name }}</a></td>
-                <td class="text-end">{{ inv.collected_amount }}</td>
-                <td class="text-end text-nowrap">{{ inv.amount }} {{ inv.currency }}</td>
+                <td class="text-end">{{ inv.collected_amount|cs_money(inv.currency) }}</td>
+                <td class="text-end text-nowrap">{{ inv.amount|cs_money(inv.currency) }}</td>
               </tr>
               {% else %}
-              <tr><td colspan="4" class="text-muted p-3">Žádné kandidáty.</td></tr>
+              <tr><td colspan="4" class="text-muted p-3">Žádné kandidáti.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -97,7 +107,10 @@
   </div>
   <div class="col-lg-6">
     <div class="card tilla-card h-100">
-      <div class="card-header">Nespárované platby</div>
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span>Nespárované platby</span>
+        <a class="small" href="/finance/unmatched-payments">Zobrazit vše</a>
+      </div>
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
@@ -105,10 +118,10 @@
             <tbody>
               {% for p in unmatched %}
               <tr>
-                <td class="text-end">{{ p.amount }}</td>
+                <td class="text-end">{{ p.amount|cs_money(p.currency) }}</td>
                 <td>{{ p.currency }}</td>
                 <td>{{ p.payer_name[:48] }}</td>
-                <td>{{ p.payment_date }}</td>
+                <td>{{ p.payment_date|cs_date }}</td>
               </tr>
               {% else %}
               <tr><td colspan="4" class="text-muted p-3">Vše spárováno.</td></tr>
@@ -122,16 +135,20 @@
   </div>
   <div class="col-lg-6">
     <div class="card tilla-card h-100">
-      <div class="card-header">Nevyrovnané zápočty / Settlement</div>
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span>Nevyrovnané zápočty / Settlement</span>
+        <a class="small" href="/finance/settlement">Zobrazit vše</a>
+      </div>
       <div class="card-body p-0">
+        <p class="small text-muted-soft px-3 pt-3 mb-2">Součet pohybů zápočtů v CZK podle klienta; významné odchylky (&gt; 25 tis. Kč) jsou zvýrazněné.</p>
         <div class="table-responsive">
           <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
-            <thead><tr><th>Klient</th><th class="text-end">Bilance CZK</th><th>Stav</th></tr></thead>
+            <thead><tr><th>Klient</th><th class="text-end">Bilance</th><th>Stav</th></tr></thead>
             <tbody>
               {% for row in offsets %}
               <tr>
                 <td><a href="/clients/{{ row.client.id }}/setoffs">{{ row.client.name }}</a></td>
-                <td class="text-end">{{ '{:.2f}'.format(row.balance) }}</td>
+                <td class="text-end">{{ row.balance|cs_money }}</td>
                 <td><span class="badge {% if row.status_key=='danger' %}badge-status-danger{% elif row.status_key=='warning' %}badge-status-warn{% else %}badge-status-ok{% endif %}">{{ row.status_label }}</span></td>
               </tr>
               {% else %}
@@ -145,7 +162,10 @@
   </div>
   <div class="col-12">
     <div class="card tilla-card">
-      <div class="card-header">Upomínky k odeslání</div>
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span>Upomínky k odeslání</span>
+        <a class="small" href="/finance/reminders-due">Zobrazit vše</a>
+      </div>
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
@@ -153,7 +173,7 @@
             <tbody>
               {% for r in reminders %}
               <tr>
-                <td>{{ r.scheduled_for }}</td>
+                <td>{{ r.scheduled_for|cs_date }}</td>
                 <td><span class="badge badge-status-warn">{{ r.level }}</span></td>
                 <td><a href="/invoices/{{ r.invoice_id }}">{{ r.invoice.variable_symbol }}</a></td>
                 <td><a href="/clients/{{ r.invoice.client_id }}">{{ r.invoice.client.short_name }}</a></td>

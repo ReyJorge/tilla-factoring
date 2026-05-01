@@ -13,9 +13,10 @@ from app.models import (
     InvoiceStatus,
     Payment,
     PaymentBatch,
+    Reminder,
     TaxDocument,
 )
-from app.services import finance_service
+from app.services import dashboard_service, finance_service, invoice_service
 from app.template_helpers import add_flash, template_ctx, templates
 
 router = APIRouter(tags=["finance"], prefix="/finance")
@@ -61,6 +62,50 @@ def finance_match(
         db.rollback()
         add_flash(request, str(e))
     return RedirectResponse(url="/finance/unmatched-payments", status_code=303)
+
+
+@router.get("/overdue-invoices")
+def finance_overdue_invoices(request: Request, db: Session = Depends(get_db)):
+    today = date.today()
+    for inv in db.query(Invoice).all():
+        invoice_service.refresh_auto_overdue(db, inv, today)
+    db.commit()
+    rows = (
+        db.query(Invoice)
+        .filter(Invoice.due_date < today, Invoice.status != InvoiceStatus.FULLY_SETTLED.value)
+        .order_by(Invoice.due_date.asc())
+        .limit(500)
+        .all()
+    )
+    return templates.TemplateResponse(
+        "finance/overdue_invoices.html",
+        template_ctx(request, nav_active="finance", invoices=rows, today=today),
+    )
+
+
+@router.get("/finalize-candidates")
+def finance_finalize_candidates(request: Request, db: Session = Depends(get_db)):
+    rows = dashboard_service.finalize_candidates(db, limit=None)[:120]
+    return templates.TemplateResponse(
+        "finance/finalize_candidates.html",
+        template_ctx(request, nav_active="finance", invoices=rows),
+    )
+
+
+@router.get("/reminders-due")
+def finance_reminders_due(request: Request, db: Session = Depends(get_db)):
+    today = date.today()
+    rows = (
+        db.query(Reminder)
+        .filter(Reminder.sent_at.is_(None), Reminder.scheduled_for <= today)
+        .order_by(Reminder.scheduled_for.asc())
+        .limit(300)
+        .all()
+    )
+    return templates.TemplateResponse(
+        "finance/reminders_due.html",
+        template_ctx(request, nav_active="finance", reminders=rows, today=today),
+    )
 
 
 @router.get("/settlement")

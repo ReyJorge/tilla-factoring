@@ -29,11 +29,13 @@
         <td><a href="/debtors/{{ row.debtor.id }}">{{ row.debtor.name }}</a></td>
         <td>{{ row.debtor.ic }}</td>
         <td>
-          {% if row.expired %}<span class="badge badge-status-danger">EXPIRED</span>
-          {% elif chk %}
+          {% if chk %}
             {% if chk.result=='BLOCK' %}<span class="badge badge-status-danger">{{ chk.result }}</span>
+            {% elif chk.result=='EXPIRED' %}<span class="badge badge-status-danger">{{ chk.result }}</span>
+            {% elif row.expired %}<span class="badge badge-status-danger">EXPIRED</span>
             {% elif chk.result=='WARNING' %}<span class="badge badge-status-warn">{{ chk.result }}</span>
             {% else %}<span class="badge badge-status-ok">{{ chk.result }}</span>{% endif %}
+          {% elif row.expired %}<span class="badge badge-status-danger">EXPIRED</span>
           {% else %}<span class="text-muted">—</span>{% endif %}
         </td>
         <td>{% if chk %}{{ row.performed }}{% else %}—{% endif %}</td>

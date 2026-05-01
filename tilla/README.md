@@ -76,7 +76,8 @@ Podrobný přehled změn v3 v souboru **[CHANGELOG_V3.md](./CHANGELOG_V3.md)**.
 | **Klienti** | Detail se sídlem, filtrovatelné faktury, nastavení vs. globální |
 | **Faktury** | Workflow, záložky (základní, platby, soubory, daň, emaily), párování platby |
 | **Odběratelé** | Anchors, tabulka s risk / pojištěním, stránka **`/debtors/risk-checks`** |
-| **Financování** | Platby, párování, dávky, výpisy, daňové doklady, úroky, pojištění, **`/finance/settlement`**, inkaso |
+| **Financování** | Platby, párování, dávky, výpisy, daňové doklady, úroky, pojištění, **`/finance/settlement`**, inkaso, fronty **`/finance/overdue-invoices`**, **`/finance/finalize-candidates`**, **`/finance/reminders-due`** |
+| **Diagnostika** | **`GET /debug/db-counts`** — počty řádků hlavních tabulek (demo / kontrola seedu) |
 | **Analýza** | Tabulka výkonu + více grafů (Chart.js) |
 | **Nastavení** | Globální parametry (`GlobalSetting`), přepsání u klienta |
 

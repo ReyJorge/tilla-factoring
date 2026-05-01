@@ -82,8 +82,19 @@ def seed() -> None:
     Base.metadata.drop_all(bind=engine)
     init_db()
     db = SessionLocal()
-    rnd = random.Random(20260201)
+    rnd = random.Random(42)
     today = date.today()
+
+    FINANCED_BLOCK_FORBIDDEN = frozenset(
+        {
+            InvoiceStatus.PURCHASED.value,
+            InvoiceStatus.ADVANCE_FINANCED.value,
+            InvoiceStatus.AWAITING_COLLECTION.value,
+            InvoiceStatus.PARTIALLY_PAID.value,
+            InvoiceStatus.OVERDUE.value,
+        }
+    )
+    BLOCK_DEBTOR_POSITIONS = frozenset({18, 19})
 
     users = [
         User(username="admin", email="admin@tilla.cz", full_name="Tereza Dvořáková", role="superadmin"),
@@ -123,15 +134,15 @@ def seed() -> None:
         db.add(GlobalSetting(key=key, value=val, description=desc))
 
     clients_payload = [
-        {"nm": "Šlechta transport, s.r.o.", "sn": "SlechtaTrans", "ic": "27900266", "contract": "2019013", "hq": "Praha 4", "email": "finance@slechta.demo"},
+        {"nm": "Šlechta transport, s.r.o.", "sn": "Šlechta", "ic": "27900266", "contract": "2019013", "hq": "Praha 4", "email": "finance@slechta.demo"},
         {"nm": "RoJa Logistics s.r.o.", "sn": "RoJa", "ic": "24699551", "contract": "2019027", "hq": "Praha 9", "email": "fakturace@roja.demo"},
-        {"nm": "LinhartTrans s.r.o.", "sn": "LinhartTr", "ic": "25588901", "contract": "2019035", "hq": "Brno", "email": "ops@linharttrans.demo"},
-        {"nm": "KK Deliv s.r.o.", "sn": "KKDeliv", "ic": "04882193", "contract": "2021038", "hq": "Ostrava", "email": "finance@kkdeliv.demo"},
+        {"nm": "LinhartTrans s.r.o.", "sn": "LinhartTrans", "ic": "25588901", "contract": "2019035", "hq": "Brno", "email": "ops@linharttrans.demo"},
+        {"nm": "KK Deliv s.r.o.", "sn": "KK Deliv", "ic": "04882193", "contract": "2021038", "hq": "Ostrava", "email": "finance@kkdeliv.demo"},
         {"nm": "Fullpack Cars s.r.o.", "sn": "Fullpack", "ic": "05933218", "contract": "2021044", "hq": "Plzeň", "email": "ucetni@fullpack.demo"},
-        {"nm": "Gross Trans s.r.o.", "sn": "GrossTr", "ic": "06120987", "contract": "2021052", "hq": "Olomouc", "email": "billing@grosstr.demo"},
-        {"nm": "OVO Trans s.r.o.", "sn": "OVOTr", "ic": "03288451", "contract": "2021061", "hq": "České Budějovice", "email": "faktury@ovo.demo"},
-        {"nm": "Saso Trans s.r.o.", "sn": "SasoTr", "ic": "02938471", "contract": "2021077", "hq": "Zlín", "email": "finance@saso.demo"},
-        {"nm": "VVF-Trans-Speed s.r.o.", "sn": "VVFTrans", "ic": "05882193", "contract": "2021089", "hq": "Pardubice", "email": "speed@vvf.demo"},
+        {"nm": "Gross Trans s.r.o.", "sn": "Gross Trans", "ic": "06120987", "contract": "2021052", "hq": "Olomouc", "email": "billing@grosstr.demo"},
+        {"nm": "OVO Trans s.r.o.", "sn": "OVO Trans", "ic": "03288451", "contract": "2021061", "hq": "České Budějovice", "email": "faktury@ovo.demo"},
+        {"nm": "Saso Trans s.r.o.", "sn": "Saso Trans", "ic": "02938471", "contract": "2021077", "hq": "Zlín", "email": "finance@saso.demo"},
+        {"nm": "VVF-Trans-Speed s.r.o.", "sn": "VVF Trans", "ic": "05882193", "contract": "2021089", "hq": "Pardubice", "email": "speed@vvf.demo"},
         {"nm": "Benke s.r.o.", "sn": "Benke", "ic": "03992114", "contract": "2021097", "hq": "Liberec", "email": "benke@benke.demo"},
     ]
     clients: list[Client] = []
@@ -181,27 +192,38 @@ def seed() -> None:
         ("12Logistics GmbH", "DE449921003", "DE", "12logistics.demo"),
     ]
     debtors: list[Debtor] = []
-    for nm, ic, cc, dom in debtor_specs:
-        ins = rnd.choice([None, 250000.0, 400000.0, 600000.0])
-        df = today - timedelta(days=rnd.randint(60, 400)) if ins else None
-        d = Debtor(name=nm, ic=ic, email=f"faktury@{dom}", country_code=cc, insurance_amount=ins, insurance_from=df)
+    ins_cycle = [280000.0, None, 400000.0, None, 520000.0, None, 360000.0, None, 450000.0, None]
+    for idx, (nm, ic, cc, dom) in enumerate(debtor_specs):
+        ins_amt = ins_cycle[idx % len(ins_cycle)]
+        ins_from = today - timedelta(days=120 + idx * 7) if ins_amt else None
+        d = Debtor(name=nm, ic=ic, email=f"faktury@{dom}", country_code=cc, insurance_amount=ins_amt, insurance_from=ins_from)
         db.add(d)
         debtors.append(d)
     db.flush()
 
     for idx, d in enumerate(debtors):
-        rs = rnd.choice(["OK", "OK", "OK", "WARNING", "BLOCK"])
-        ptax = rnd.choice([ProtocolFlag.OK.value, ProtocolFlag.OK.value, ProtocolFlag.UNKNOWN.value])
-        prat = rnd.choice([ProtocolFlag.OK.value, ProtocolFlag.OK.value, ProtocolFlag.UNKNOWN.value])
-        if rs == "BLOCK":
-            prat = ProtocolFlag.ISSUE.value
-            pins = ProtocolFlag.ISSUE.value
+        # ~70 % OK (fresh), WARNING 3×, EXPIRED výsledek 1×, BLOCK 2× — viz BLOCK_DEBTOR_POSITIONS u faktur
+        if idx <= 13:
+            rs, age_d = "OK", 9
+        elif idx <= 16:
+            rs, age_d = "WARNING", 11
+        elif idx == 17:
+            rs, age_d = "EXPIRED", 42
         else:
-            pins = ProtocolFlag.OK.value
+            rs, age_d = "BLOCK", 6
+        pins = ProtocolFlag.ISSUE.value if rs == "BLOCK" else ProtocolFlag.OK.value
+        prat = ProtocolFlag.ISSUE.value if rs == "BLOCK" else ProtocolFlag.UNKNOWN.value if rs == "EXPIRED" else ProtocolFlag.OK.value
+        ptax = (
+            ProtocolFlag.UNKNOWN.value
+            if rs in {"WARNING", "EXPIRED"}
+            else ProtocolFlag.OK.value
+            if rs == "OK"
+            else ProtocolFlag.UNKNOWN.value
+        )
         db.add(
             RiskCheck(
                 debtor_id=d.id,
-                checked_at=datetime.utcnow() - timedelta(days=rnd.randint(2, 45)),
+                checked_at=datetime.utcnow() - timedelta(days=age_d),
                 result=rs,
                 protocol_insolvency=pins,
                 protocol_taxpayer=ptax,
@@ -210,11 +232,11 @@ def seed() -> None:
                 protocol_rating=prat,
             )
         )
-        if ins_amt := (float(d.insurance_amount) if d.insurance_amount else 0):
+        if float(d.insurance_amount or 0) > 0:
             db.add(
                 InsuranceRecord(
                     debtor_id=d.id,
-                    insured_limit=ins_amt,
+                    insured_limit=float(d.insurance_amount),
                     valid_from=today - timedelta(days=200),
                     valid_to=today + timedelta(days=400),
                     insurer_name="Euler Hermes DEMO",
@@ -256,68 +278,87 @@ def seed() -> None:
         (8470.0, "CZK"),
         (15730.0, "CZK"),
     ]
-    status_cycle = [
-        InvoiceStatus.NEW.value,
-        InvoiceStatus.PENDING_CHECK.value,
-        InvoiceStatus.PENDING_DEBTOR_CONFIRM.value,
-        InvoiceStatus.DEBTOR_CONFIRMED.value,
-        InvoiceStatus.PURCHASED.value,
-        InvoiceStatus.ADVANCE_FINANCED.value,
-        InvoiceStatus.AWAITING_COLLECTION.value,
-        InvoiceStatus.PARTIALLY_PAID.value,
-        InvoiceStatus.FULLY_SETTLED.value,
-        InvoiceStatus.OVERDUE.value,
-        InvoiceStatus.PROBLEM.value,
-    ]
+
+    categories = ["SETTLED"] * 52 + ["OVERDUE"] * 14 + ["FINALIZE"] * 8 + ["PIPE"] * 56 + ["EARLY"] * 10
+    rnd.shuffle(categories)
 
     invoices: list[Invoice] = []
-    n_inv = 168
-    for i in range(n_inv):
-        c = clients[i % len(clients)]
-        d = debtors[i % len(debtors)]
+    featured_idx: int | None = None
+
+    for i in range(140):
+        cat = categories[i]
+        c = clients[i % 10]
+        base_di = i % 20
+        di = base_di
+        if cat in {"OVERDUE", "FINALIZE", "PIPE"}:
+            for step in range(20):
+                cand = (base_di + step) % 20
+                if cand not in BLOCK_DEBTOR_POSITIONS:
+                    di = cand
+                    break
+        d = debtors[di]
+
         amt, cur = amt_presets[i % len(amt_presets)]
-        jitter = rnd.uniform(0.97, 1.03)
-        amount = round(amt * jitter, 2)
+        amount = round(amt * (0.97 + (i % 5) * 0.007), 2)
         vs_base = vs_presets[i % len(vs_presets)]
         vs = vs_base if i < len(vs_presets) else f"{vs_base}-{i}"
 
-        issued = today - timedelta(days=rnd.randint(20, 540))
-        submitted = issued + timedelta(days=rnd.randint(0, 4))
-        maturity = rnd.randint(21, 92)
-        due = submitted + timedelta(days=maturity)
-        status = status_cycle[i % len(status_cycle)]
-
-        if status == InvoiceStatus.OVERDUE.value:
-            due = today - timedelta(days=rnd.randint(3, 180))
-        if status == InvoiceStatus.FULLY_SETTLED.value:
-            collected = amount
-        elif status == InvoiceStatus.PARTIALLY_PAID.value:
-            collected = round(amount * rnd.uniform(0.25, 0.72), 2)
-        elif status in (
-            InvoiceStatus.PURCHASED.value,
-            InvoiceStatus.ADVANCE_FINANCED.value,
-            InvoiceStatus.AWAITING_COLLECTION.value,
-        ):
-            collected = round(amount * rnd.choice([0.0, 0.0, 0.08]), 2)
-        else:
-            collected = 0.0
-
+        issued = submitted = due = today
+        collected = 0.0
+        status = InvoiceStatus.NEW.value
         purchased_date = None
-        if status in {
-            InvoiceStatus.PURCHASED.value,
-            InvoiceStatus.ADVANCE_FINANCED.value,
-            InvoiceStatus.AWAITING_COLLECTION.value,
-            InvoiceStatus.PARTIALLY_PAID.value,
-            InvoiceStatus.FULLY_SETTLED.value,
-            InvoiceStatus.OVERDUE.value,
-        }:
-            purchased_date = submitted + timedelta(days=rnd.randint(2, 18))
+        reminder_level = min(3, i % 5)
+
+        if cat == "SETTLED":
+            issued = today - timedelta(days=95 + (i % 75))
+            submitted = issued + timedelta(days=i % 3)
+            due = submitted + timedelta(days=22 + (i % 20))
+            status = InvoiceStatus.FULLY_SETTLED.value
+            collected = amount
+            purchased_date = submitted + timedelta(days=6 + (i % 9))
+        elif cat == "OVERDUE":
+            issued = today - timedelta(days=48 + (i % 30))
+            submitted = issued + timedelta(days=i % 2)
+            due = today - timedelta(days=6 + (i % 26))
+            status = InvoiceStatus.OVERDUE.value
+            purchased_date = submitted + timedelta(days=5 + (i % 7))
+            collected = round(amount * [0.0, 0.07, 0.14][i % 3], 2)
+        elif cat == "FINALIZE":
+            issued = today - timedelta(days=52 + (i % 38))
+            submitted = issued + timedelta(days=1)
+            # Částka už dorazila — splatnost ještě před námi → nepatří do „po splatnosti“ KPI
+            due = today + timedelta(days=3 + (i % 12))
+            status = InvoiceStatus.AWAITING_COLLECTION.value
+            purchased_date = submitted + timedelta(days=7)
+            collected = round(amount * 0.9996, 2)
+        elif cat == "PIPE":
+            issued = today - timedelta(days=10 + (i % 48))
+            submitted = issued + timedelta(days=i % 2)
+            due = today + timedelta(days=18 + (i % 24))
+            purchased_date = submitted + timedelta(days=5 + (i % 8))
+            collected = round(amount * [0.0, 0.04][i % 2], 2)
+            mod = i % 3
+            if mod == 0:
+                status = InvoiceStatus.PURCHASED.value
+            elif mod == 1:
+                status = InvoiceStatus.ADVANCE_FINANCED.value
+            else:
+                status = InvoiceStatus.AWAITING_COLLECTION.value
+            if featured_idx is None and c.id == slechta.id:
+                featured_idx = len(invoices)
+        else:
+            issued = today - timedelta(days=7 + (i % 26))
+            submitted = issued + timedelta(days=i % 2)
+            due = today + timedelta(days=32 + (i % 20))
+            collected = 0.0
+            purchased_date = None
+            status = InvoiceStatus.NEW.value if i % 2 == 0 else InvoiceStatus.PENDING_CHECK.value
 
         inv = Invoice(
             client_id=c.id,
             debtor_id=d.id,
             variable_symbol=vs,
-            invoice_number=f"FA-{issued.year}-{4200 + i}",
+            invoice_number=f"FA-{issued.year}-{8200 + i}",
             amount=amount,
             currency=cur,
             issued_date=issued,
@@ -327,21 +368,16 @@ def seed() -> None:
             collected_amount=collected,
             status=status,
             note=None,
-            reminder_level=rnd.randint(0, 4),
+            reminder_level=reminder_level,
         )
         db.add(inv)
         invoices.append(inv)
 
-    finalize_boost = rnd.sample([x for x in invoices if x.status != InvoiceStatus.FULLY_SETTLED.value], k=min(18, len(invoices)))
-    for inv in finalize_boost:
-        inv.collected_amount = float(inv.amount)
-        inv.status = InvoiceStatus.AWAITING_COLLECTION.value
-
     db.flush()
 
-    featured_vs = "20201642"
-    feat_inv = next((x for x in invoices if x.variable_symbol.startswith(featured_vs)), invoices[0])
-    feat_inv.variable_symbol = featured_vs
+    fi = featured_idx if featured_idx is not None else next(j for j, inv in enumerate(invoices) if inv.client_id == slechta.id)
+    feat_inv = invoices[fi]
+    feat_inv.variable_symbol = "20201642"
 
     for inv in invoices:
         invoice_service.apply_fee_and_advance(db, inv)
@@ -361,16 +397,18 @@ def seed() -> None:
             )
         )
 
-    for subj in [
-        ("Žádost o potvrzení faktury — VS", "Potvrďte prosím přijetí služeb."),
-        ("Potvrzení odběratele — VS", "Potvrzujeme řádné přijetí."),
-        ("Upomínka — VS", "Žádáme o úhradu po splatnosti."),
-        ("Oznámení o financování — VS", "Záloha byla vyplacena."),
-    ]:
+    for i, subj in enumerate(
+        [
+            ("Žádost o potvrzení faktury — VS", "Potvrďte prosím přijetí služeb."),
+            ("Potvrzení odběratele — VS", "Potvrzujeme řádné přijetí."),
+            ("Upomínka — VS", "Žádáme o úhradu po splatnosti."),
+            ("Oznámení o financování — VS", "Záloha byla vyplacena."),
+        ]
+    ):
         db.add(
             EmailLog(
                 invoice_id=feat_inv.id,
-                sent_at=datetime.utcnow() - timedelta(days=rnd.randint(1, 40)),
+                sent_at=datetime.utcnow() - timedelta(days=7 + i * 11),
                 recipients="anchor.demo@tilla.cz",
                 subject=f"{subj[0]} {feat_inv.variable_symbol}",
                 attachments_summary=subj[1],
@@ -385,11 +423,12 @@ def seed() -> None:
         ("SEPA-240910", "SEPA import", "processed"),
         ("RETURN-240915", "Vratka / oprava", "processed"),
     ]
+    batch_dates = [11, 19, 27, 36, 48]
     batches: list[PaymentBatch] = []
-    for ref, btype, st in batches_meta:
+    for bi, (ref, btype, st) in enumerate(batches_meta):
         b = PaymentBatch(
             reference=ref,
-            batch_date=today - timedelta(days=rnd.randint(2, 45)),
+            batch_date=today - timedelta(days=batch_dates[bi]),
             description=f"TILLA demo {ref}",
             batch_type=btype,
             status=st,
@@ -400,36 +439,55 @@ def seed() -> None:
 
     payers = ["Kuehne + Nagel DEMO", "DSV DEMO", "GEFCO DEMO", "JKD SPED DEMO", "Bank klient DEMO"]
 
+    settled_inv = [inv for inv in invoices if inv.status == InvoiceStatus.FULLY_SETTLED.value]
+    pipe_inv = [inv for inv in invoices if inv.status != InvoiceStatus.FULLY_SETTLED.value]
+    per_batch = [7, 6, 7, 8, 7]
+    seq = 0
+    mult = [0.82, 0.91, 1.0, 0.88, 0.95]
     for bi, batch in enumerate(batches):
-        for j in range(rnd.randint(6, 14)):
-            matched = rnd.random() < 0.58
-            inv = rnd.choice(invoices)
-            amt_tpl = amt_presets[(bi * 10 + j) % len(amt_presets)]
-            amt = round(amt_tpl[0] * rnd.uniform(0.5, 1.1), 2)
+        for j in range(per_batch[bi]):
+            matched = (seq % 18) != 0
+            pool = settled_inv if matched else pipe_inv
+            inv = pool[(seq + bi * 3 + j) % len(pool)]
+            amt_tpl = amt_presets[seq % len(amt_presets)]
+            amt = round(amt_tpl[0] * mult[seq % len(mult)], 2)
             cur = amt_tpl[1]
-            pay = Payment(
-                batch_id=batch.id,
-                amount=amt,
-                currency=cur,
-                payer_name=rnd.choice(payers),
-                payment_date=today - timedelta(days=rnd.randint(1, 50)),
-                matched_invoice_id=inv.id if matched else None,
-                probable_invoice_id=None if matched else inv.id,
-                variable_symbol_hint=inv.variable_symbol if rnd.random() < 0.85 else f"HINT-{bi}-{j}",
+            hint = inv.variable_symbol if (seq % 7) != 2 else f"HINT-{seq}"
+            db.add(
+                Payment(
+                    batch_id=batch.id,
+                    amount=amt,
+                    currency=cur,
+                    payer_name=payers[(seq + bi) % len(payers)],
+                    payment_date=today - timedelta(days=4 + (seq % 38)),
+                    matched_invoice_id=inv.id if matched else None,
+                    probable_invoice_id=None if matched else inv.id,
+                    variable_symbol_hint=hint,
+                )
             )
-            db.add(pay)
+            seq += 1
 
-    unmatched_extra = 28
-    for j in range(unmatched_extra):
-        inv = rnd.choice(invoices)
-        amt_tpl = amt_presets[j % len(amt_presets)]
+    unmatched_amounts = [
+        (8400.0, "CZK"),
+        (380.0, "EUR"),
+        (12150.0, "CZK"),
+        (515.0, "EUR"),
+        (22340.0, "CZK"),
+        (910.0, "EUR"),
+        (4820.0, "CZK"),
+        (620.0, "EUR"),
+        (15680.0, "CZK"),
+        (445.0, "EUR"),
+    ]
+    for j, (amt, cur) in enumerate(unmatched_amounts):
+        inv = pipe_inv[(j * 5 + 3) % len(pipe_inv)]
         db.add(
             Payment(
                 batch_id=None,
-                amount=round(amt_tpl[0] * rnd.uniform(0.4, 1.2), 2),
-                currency=amt_tpl[1],
-                payer_name=rnd.choice(payers),
-                payment_date=today - timedelta(days=rnd.randint(1, 25)),
+                amount=amt,
+                currency=cur,
+                payer_name=payers[(j + 2) % len(payers)],
+                payment_date=today - timedelta(days=2 + (j % 14)),
                 matched_invoice_id=None,
                 probable_invoice_id=inv.id,
                 variable_symbol_hint=inv.variable_symbol,
@@ -447,14 +505,13 @@ def seed() -> None:
         (clients[7].id, None, -2400, "EUR", fx, True, "Úroková složka zálohy"),
         (clients[8].id, None, 15500, "EUR", fx, False, "Oprava kurzového rozdílu"),
         (clients[3].id, None, -67000, "CZK", 1.0, True, "Doúčtování poplatku"),
-        (clients[9].id, None, 3300, "EUR", fx, False, "Ruční pohyb seed"),
     ]
-    for cid, iid, orig_amt, cur, rate, bearing, desc in offset_specs:
+    for oi, (cid, iid, orig_amt, cur, rate, bearing, desc) in enumerate(offset_specs):
         db.add(
             OffsetEntry(
                 client_id=cid,
                 invoice_id=iid,
-                movement_date=today - timedelta(days=rnd.randint(5, 80)),
+                movement_date=today - timedelta(days=14 + oi * 11),
                 description=desc,
                 original_amount=orig_amt,
                 original_currency=cur,
@@ -464,23 +521,26 @@ def seed() -> None:
             )
         )
 
-    cand_rem = [
-        inv
-        for inv in invoices
-        if inv.status
-        in {InvoiceStatus.OVERDUE.value, InvoiceStatus.AWAITING_COLLECTION.value, InvoiceStatus.PARTIALLY_PAID.value}
-    ]
-    for inv in rnd.sample(cand_rem, k=min(35, len(cand_rem))):
+    cand_rem = sorted(
+        [
+            inv
+            for inv in invoices
+            if inv.status
+            in {InvoiceStatus.OVERDUE.value, InvoiceStatus.AWAITING_COLLECTION.value, InvoiceStatus.PARTIALLY_PAID.value}
+        ],
+        key=lambda x: x.due_date,
+    )
+    for inv in cand_rem[:12]:
         db.add(
             Reminder(
                 invoice_id=inv.id,
-                level=min(inv.reminder_level + 1, 5),
-                scheduled_for=today - timedelta(days=rnd.randint(0, 5)),
+                level=min(inv.reminder_level + 1, 4),
+                scheduled_for=today - timedelta(days=inv.id % 6),
                 sent_at=None,
             )
         )
 
-    for inv in rnd.sample(invoices, k=55):
+    for inv in invoices:
         base = float(inv.amount) / (1 + float(defaults["dph"]) / 100)
         db.add(
             TaxDocument(
@@ -518,8 +578,13 @@ def seed() -> None:
         ]
     )
 
-    fin = [x for x in invoices if x.status in {InvoiceStatus.PURCHASED.value, InvoiceStatus.ADVANCE_FINANCED.value}]
-    for inv in rnd.sample(fin, k=min(35, len(fin))):
+    fin = sorted(
+        [x for x in invoices if x.status in {InvoiceStatus.PURCHASED.value, InvoiceStatus.ADVANCE_FINANCED.value}],
+        key=lambda x: x.id,
+    )
+    for ix, inv in enumerate(fin):
+        if ix % 2:
+            continue
         db.add(
             AdvanceInterestLine(
                 invoice_id=inv.id,

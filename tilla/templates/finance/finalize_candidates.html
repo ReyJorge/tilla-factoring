@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}K finalizaci{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li><li class="breadcrumb-item active">K finalizaci</li></ol></nav>
+<h1 class="h3 mb-4 fw-semibold">Faktury k finalizaci (inkasováno ≥ 99,9 %)</h1>
+<div class="table-responsive card tilla-card">
+  <table class="table table-sm mb-0 tilla-table align-middle">
+    <thead><tr><th>VS</th><th>Klient</th><th class="text-end">Inkasováno</th><th class="text-end">Částka</th></tr></thead>
+    <tbody>
+      {% for inv in invoices %}
+      <tr>
+        <td><a href="/invoices/{{ inv.id }}">{{ inv.variable_symbol }}</a></td>
+        <td>{{ inv.client.short_name }}</td>
+        <td class="text-end">{{ inv.collected_amount|cs_money(inv.currency) }}</td>
+        <td class="text-end">{{ inv.amount|cs_money(inv.currency) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-muted p-3">Žádné kandidáti.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

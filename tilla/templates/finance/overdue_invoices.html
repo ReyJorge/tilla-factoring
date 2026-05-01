@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Faktury po splatnosti{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li><li class="breadcrumb-item active">Po splatnosti</li></ol></nav>
+<h1 class="h3 mb-4 fw-semibold">Faktury po splatnosti</h1>
+<div class="table-responsive card tilla-card">
+  <table class="table table-sm mb-0 tilla-table align-middle">
+    <thead><tr><th>Dny</th><th>VS</th><th>Klient</th><th>Odběratel</th><th>Splatnost</th><th class="text-end">Částka</th></tr></thead>
+    <tbody>
+      {% for inv in invoices %}
+      <tr>
+        <td><span class="badge badge-status-danger">{{ (today - inv.due_date).days }}</span></td>
+        <td><a href="/invoices/{{ inv.id }}">{{ inv.variable_symbol }}</a></td>
+        <td>{{ inv.client.short_name }}</td>
+        <td>{{ inv.debtor.name[:52] }}</td>
+        <td>{{ inv.due_date|cs_date }}</td>
+        <td class="text-end">{{ inv.amount|cs_money(inv.currency) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-muted p-3">Žádné položky.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

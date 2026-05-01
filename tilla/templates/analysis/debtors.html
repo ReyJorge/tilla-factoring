@@ -4,31 +4,36 @@
 <nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li><li class="breadcrumb-item active">Analýza</li></ol></nav>
 
 <h1 class="h3 mb-2 fw-semibold">Management přehled — odběratelé</h1>
-<p class="text-muted-soft small mb-4">Období: posledních {{ period_days }} dní · Průměrná durace aktiv (vážená, otevřené položky): <strong>{{ avg_asset_duration }} dní</strong></p>
+<p class="text-muted-soft small mb-4">
+  Období: posledních {{ period_days }} dní · Vážené dny <strong>do splatnosti</strong> (otevřené, před splatností): <strong>{{ avg_to_maturity_portfolio }} dní</strong>
+  {% if avg_overdue_portfolio > 0 %}
+  · Průměrné zpoždění po splatnosti (vážené): <strong>{{ avg_overdue_portfolio }} dní</strong>
+  {% endif %}
+</p>
 
 <div class="row g-4 mb-4">
   <div class="col-lg-6">
     <div class="card tilla-card p-4 h-100">
-      <h2 class="h6 fw-semibold mb-3">Průměrná durace aktiv (TOP podle otevřeného objemu)</h2>
-      <canvas id="chartDuration" height="140"></canvas>
+      <h2 class="h6 fw-semibold mb-3">Vážené dny do splatnosti (TOP podle otevřeného objemu)</h2>
+      {% if chart_duration_ok %}<canvas id="chartDuration" height="140"></canvas>{% else %}<p class="text-muted mb-0 small">Nedostatek dat</p>{% endif %}
     </div>
   </div>
   <div class="col-lg-6">
     <div class="card tilla-card p-4 h-100">
-      <h2 class="h6 fw-semibold mb-3">Inkaso podle ETA (dny od dnes)</h2>
-      <canvas id="chartEta" height="140"></canvas>
+      <h2 class="h6 fw-semibold mb-3">Inkaso — dny do váženého ETA</h2>
+      {% if chart_eta_ok %}<canvas id="chartEta" height="140"></canvas>{% else %}<p class="text-muted mb-0 small">Nedostatek dat</p>{% endif %}
     </div>
   </div>
   <div class="col-lg-6">
     <div class="card tilla-card p-4 h-100">
       <h2 class="h6 fw-semibold mb-3">Otevřené vs uzavřené faktury</h2>
-      <canvas id="chartPie" height="200"></canvas>
+      {% if (pie_open + pie_closed) > 0 %}<canvas id="chartPie" height="200"></canvas>{% else %}<p class="text-muted mb-0 small">Nedostatek dat</p>{% endif %}
     </div>
   </div>
   <div class="col-lg-6">
     <div class="card tilla-card p-4 h-100">
       <h2 class="h6 fw-semibold mb-3">Výkon odběratelů (objem za období)</h2>
-      <canvas id="chartPerformance" height="140"></canvas>
+      {% if chart_performance_ok %}<canvas id="chartPerformance" height="140"></canvas>{% else %}<p class="text-muted mb-0 small">Nedostatek dat</p>{% endif %}
     </div>
   </div>
 </div>
@@ -39,7 +44,7 @@
       <tr>
         <th>#</th><th>Název</th><th>IČ</th><th>Riskcheck</th><th class="text-end">Pojištění</th><th>Země</th>
         <th class="text-end">Za obd. ks</th><th class="text-end">Za obd. hodnota</th><th class="text-end">Otevř. ks</th><th class="text-end">Otevř. hodnota</th>
-        <th class="text-end">Poměr %</th><th class="text-end">Vážený Δ spl.</th><th>ETA</th>
+        <th class="text-end">Poměr %</th><th class="text-end">Váž. dny do spl.</th><th class="text-end">Prům. zpoždění</th><th>ETA inkasa</th>
       </tr>
     </thead>
     <tbody>
@@ -49,21 +54,23 @@
         <td><a href="/debtors/{{ r.debtor.id }}">{{ r.debtor.name }}</a></td>
         <td>{{ r.debtor.ic }}</td>
         <td>
-          {% if r.risk_expired %}<span class="badge badge-status-danger">EXPIRED</span>
-          {% elif r.risk=='BLOCK' %}<span class="badge badge-status-danger">{{ r.risk }}</span>
+          {% if r.risk=='BLOCK' %}<span class="badge badge-status-danger">{{ r.risk }}</span>
+          {% elif r.risk=='EXPIRED' %}<span class="badge badge-status-danger">{{ r.risk }}</span>
           {% elif r.risk=='WARNING' %}<span class="badge badge-status-warn">{{ r.risk }}</span>
+          {% elif r.risk_expired %}<span class="badge badge-status-danger">EXPIRED</span>
           {% elif r.risk=='OK' %}<span class="badge badge-status-ok">{{ r.risk }}</span>
           {% else %}<span class="badge badge-status-wait">{{ r.risk }}</span>{% endif %}
         </td>
-        <td class="text-end">{% if r.insured %}<span class="badge badge-status-ok">{{ '%.0f'|format(r.insured) }}</span>{% else %}—{% endif %}</td>
+        <td class="text-end">{% if r.insured %}<span class="badge badge-status-ok">{{ r.insured|int|string }}</span>{% else %}—{% endif %}</td>
         <td>{{ r.debtor.country_code }}</td>
         <td class="text-end">{{ r.hist_cnt }}</td>
-        <td class="text-end">{{ '%.0f'|format(r.hist_val) }}</td>
+        <td class="text-end">{{ r.hist_val|cs_int }}</td>
         <td class="text-end">{{ r.open_cnt }}</td>
-        <td class="text-end">{{ '%.0f'|format(r.open_val) }}</td>
-        <td class="text-end">{{ r.ratio_val }} %</td>
-        <td class="text-end">{{ r.avg_open_days }}</td>
-        <td>{{ r.eta }}</td>
+        <td class="text-end">{{ r.open_val|cs_int }}</td>
+        <td class="text-end">{{ r.ratio_val|cs_pct(1) }} %{% if r.ratio_anomaly %} <span class="badge badge-status-warn small">anomálie</span>{% endif %}</td>
+        <td class="text-end">{% if r.avg_days_to_maturity > 0 %}{{ r.avg_days_to_maturity|string|replace('.', ',') }}{% else %}—{% endif %}</td>
+        <td class="text-end">{% if r.avg_overdue_days_open > 0 %}{{ r.avg_overdue_days_open|string|replace('.', ',') }}{% else %}—{% endif %}</td>
+        <td>{{ r.eta|cs_date }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -97,10 +104,11 @@
     });
   }
 
-  barChart('chartDuration', {{ chart_duration_labels|tojson }}, {{ chart_duration_values|tojson }}, 'dny');
-  barChart('chartEta', {{ chart_eta_labels|tojson }}, {{ chart_eta_values|tojson }}, 'dny do ETA');
-  barChart('chartPerformance', {{ chart_performance_labels|tojson }}, {{ chart_performance_values|tojson }}, 'objem období');
+  {% if chart_duration_ok %}barChart('chartDuration', {{ chart_duration_labels|tojson }}, {{ chart_duration_values|tojson }}, 'dny');{% endif %}
+  {% if chart_eta_ok %}barChart('chartEta', {{ chart_eta_labels|tojson }}, {{ chart_eta_days|tojson }}, 'dny do ETA');{% endif %}
+  {% if chart_performance_ok %}barChart('chartPerformance', {{ chart_performance_labels|tojson }}, {{ chart_performance_values|tojson }}, 'objem období');{% endif %}
 
+  {% if (pie_open + pie_closed) > 0 %}
   const pieCtx = document.getElementById('chartPie');
   if (pieCtx) {
     new Chart(pieCtx, {
@@ -117,5 +125,6 @@
       options: { plugins: { legend: { position: 'bottom' } } }
     });
   }
+  {% endif %}
 </script>
 {% endblock %}

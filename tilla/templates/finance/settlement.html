@@ -5,19 +5,24 @@
 
 <h1 class="h3 mb-4 fw-semibold">Settlement / zápočty — portfolio</h1>
 
+<p class="text-muted-soft small mb-4">
+  Součet všech řádků zápočtů přepočtených na CZK podle kurzu uloženého u pohybu (EUR × kurz z nastavení, demo <strong>25,00</strong> Kč/EUR).
+  Kladný součet znamená přeplatek ve prospěch klientů na clearing účtu, záporný dluh vůči faktorovi — slouží k prioritizaci vyrovnání.
+</p>
+
 <div class="row g-3 mb-4">
   <div class="col-md-4">
     <div class="kpi-chip">
-      <div class="kpi-label">Hodnota celkem (CZK)</div>
-      <div class="kpi-value text-end">{{ '{:.2f}'.format(agg.total) }}</div>
+      <div class="kpi-label">Hodnota celkem</div>
+      <div class="kpi-value text-end">{{ agg.total|cs_money }}</div>
       <div class="kpi-sub text-end"><span class="badge {% if agg.significance=='problem' %}badge-status-danger{% elif agg.significance=='attention' %}badge-status-warn{% else %}badge-status-ok{% endif %}">{{ agg.label }}</span></div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="stat-pill"><div class="text-muted-soft small">Úročené (suma CZK)</div><div class="fw-semibold text-end">{{ '{:.2f}'.format(agg.bearing_sum) }}</div></div>
+    <div class="stat-pill"><div class="text-muted-soft small">Úročené (suma CZK)</div><div class="fw-semibold text-end">{{ agg.bearing_sum|cs_money }}</div></div>
   </div>
   <div class="col-md-4">
-    <div class="stat-pill"><div class="text-muted-soft small">Neúročené (suma CZK)</div><div class="fw-semibold text-end">{{ '{:.2f}'.format(agg.nonbearing_sum) }}</div></div>
+    <div class="stat-pill"><div class="text-muted-soft small">Neúročené (suma CZK)</div><div class="fw-semibold text-end">{{ agg.nonbearing_sum|cs_money }}</div></div>
   </div>
 </div>
 
@@ -29,12 +34,12 @@
       <tbody>
         {% for r in agg.bearing_rows %}
         <tr>
-          <td>{{ r.movement_date }}</td>
+          <td>{{ r.movement_date|cs_date }}</td>
           <td><a href="/clients/{{ r.client_id }}/setoffs">{{ r.client.short_name }}</a></td>
           <td>{{ r.description[:56] }}</td>
-          <td class="text-end">{{ r.original_amount }} {{ r.original_currency }}</td>
-          <td class="text-end">{{ r.fx_rate_to_czk }}</td>
-          <td class="text-end">{{ '{:.2f}'.format(r.amount_czk) }}</td>
+          <td class="text-end">{{ r.original_amount|cs_money(r.original_currency) }}</td>
+          <td class="text-end">{{ '%.2f'|format(r.fx_rate_to_czk)|replace('.', ',') }}</td>
+          <td class="text-end">{{ r.amount_czk|cs_money }}</td>
         </tr>
         {% else %}<tr><td colspan="6" class="text-muted p-3">Žádné položky.</td></tr>{% endfor %}
       </tbody>
@@ -50,12 +55,12 @@
       <tbody>
         {% for r in agg.nonbearing_rows %}
         <tr>
-          <td>{{ r.movement_date }}</td>
+          <td>{{ r.movement_date|cs_date }}</td>
           <td><a href="/clients/{{ r.client_id }}/setoffs">{{ r.client.short_name }}</a></td>
           <td>{{ r.description[:56] }}</td>
-          <td class="text-end">{{ r.original_amount }} {{ r.original_currency }}</td>
-          <td class="text-end">{{ r.fx_rate_to_czk }}</td>
-          <td class="text-end">{{ '{:.2f}'.format(r.amount_czk) }}</td>
+          <td class="text-end">{{ r.original_amount|cs_money(r.original_currency) }}</td>
+          <td class="text-end">{{ '%.2f'|format(r.fx_rate_to_czk)|replace('.', ',') }}</td>
+          <td class="text-end">{{ r.amount_czk|cs_money }}</td>
         </tr>
         {% else %}<tr><td colspan="6" class="text-muted p-3">Žádné položky.</td></tr>{% endfor %}
       </tbody>

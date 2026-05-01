@@ -42,6 +42,7 @@ class RiskResult(str, enum.Enum):
     OK = "OK"
     WARNING = "WARNING"
     BLOCK = "BLOCK"
+    EXPIRED = "EXPIRED"
 
 
 class ProtocolFlag(str, enum.Enum):

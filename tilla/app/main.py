@@ -1,14 +1,26 @@
 import logging
 import os
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 import app.models  # noqa: F401 — tabulky na Base.metadata před drop_all/create_all
 
-from app.database import BASE_DIR, Base, engine, init_db
+from app.database import BASE_DIR, Base, engine, get_db, init_db
+from app.models import (
+    BankStatement,
+    Client,
+    Debtor,
+    Invoice,
+    OffsetEntry,
+    Payment,
+    PaymentBatch,
+    Reminder,
+    RiskCheck,
+)
 from app.seed import seed, seed_demo_if_empty
 from app.routers import analysis, clients, dashboard, debtors, finance, home, invoices, settings
 
@@ -45,6 +57,22 @@ def _startup():
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "tilla"}
+
+
+@app.get("/debug/db-counts")
+def debug_db_counts(db: Session = Depends(get_db)):
+    """Demo diagnostika — počty řádků v hlavních tabulkách."""
+    return {
+        "clients": db.query(Client).count(),
+        "debtors": db.query(Debtor).count(),
+        "invoices": db.query(Invoice).count(),
+        "payments": db.query(Payment).count(),
+        "payment_batches": db.query(PaymentBatch).count(),
+        "reminders": db.query(Reminder).count(),
+        "offset_entries": db.query(OffsetEntry).count(),
+        "risk_checks": db.query(RiskCheck).count(),
+        "bank_statements": db.query(BankStatement).count(),
+    }
 
 
 @app.get("/")

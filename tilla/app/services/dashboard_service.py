@@ -16,7 +16,8 @@ def refresh_dashboard_invoices(db: Session) -> None:
             db.add(inv)
 
 
-def overdue_rows(db: Session, limit: int = 35) -> list[Invoice]:
+def overdue_rows(db: Session, limit: int = 10) -> list[Invoice]:
+    """Nejdéle po splatnosti první — řazení podle splatnosti vzestupně (nejstarší = nejvíc dnů overdue)."""
     today = date.today()
     return (
         db.query(Invoice)
@@ -27,8 +28,8 @@ def overdue_rows(db: Session, limit: int = 35) -> list[Invoice]:
     )
 
 
-def finalize_candidates(db: Session, limit: int = 25) -> list[Invoice]:
-    candidates: list[Invoice] = []
+def finalize_candidates(db: Session, limit: int | None = 8) -> list[Invoice]:
+    pool: list[Invoice] = []
     for inv in (
         db.query(Invoice)
         .filter(
@@ -42,17 +43,15 @@ def finalize_candidates(db: Session, limit: int = 25) -> list[Invoice]:
                 ]
             )
         )
-        .order_by(Invoice.due_date.asc())
         .all()
     ):
         if float(inv.collected_amount or 0) >= float(inv.amount) * 0.999:
-            candidates.append(inv)
-        if len(candidates) >= limit:
-            break
-    return candidates
+            pool.append(inv)
+    pool.sort(key=lambda i: float(i.collected_amount or 0) / float(i.amount), reverse=True)
+    return pool if limit is None else pool[:limit]
 
 
-def unmatched_payment_rows(db: Session, limit: int = 40) -> list[Payment]:
+def unmatched_payment_rows(db: Session, limit: int = 8) -> list[Payment]:
     return (
         db.query(Payment)
         .filter(Payment.matched_invoice_id.is_(None))
@@ -71,7 +70,7 @@ def _offset_significance(balance: float) -> tuple[str, str]:
     return "ok", "v pořádku"
 
 
-def unsettled_offsets_clients(db: Session, limit: int = 15) -> list[dict]:
+def unsettled_offsets_clients(db: Session, limit: int = 6) -> list[dict]:
     totals: dict[int, float] = {}
     for cid, total in (
         db.query(OffsetEntry.client_id, func.sum(OffsetEntry.amount_czk)).group_by(OffsetEntry.client_id).all()
@@ -88,7 +87,7 @@ def unsettled_offsets_clients(db: Session, limit: int = 15) -> list[dict]:
     return out
 
 
-def reminders_due(db: Session, limit: int = 30) -> list[Reminder]:
+def reminders_due(db: Session, limit: int = 10) -> list[Reminder]:
     today = date.today()
     return (
         db.query(Reminder)
@@ -167,7 +166,8 @@ def unmatched_payments_stats(db: Session) -> tuple[int, float]:
     return len(rows), czk_eq
 
 
-def weighted_avg_duration_open(db: Session) -> float:
+def weighted_avg_days_to_maturity(db: Session) -> float:
+    """Vážený počet dnů DO splatnosti jen pro otevřené položky před splatností (kladné hodnoty)."""
     today = date.today()
     wsum = 0.0
     wtot = 0.0
@@ -177,8 +177,29 @@ def weighted_avg_duration_open(db: Session) -> float:
         open_amt = float(inv.amount) - float(inv.collected_amount or 0)
         if open_amt <= 0:
             continue
-        days = invoice_service.days_relative_to_due(inv, today)
-        wsum += days * open_amt
+        if inv.due_date < today:
+            continue
+        days_to = (inv.due_date - today).days
+        wsum += days_to * open_amt
+        wtot += open_amt
+    return round(wsum / wtot, 1) if wtot else 0.0
+
+
+def weighted_avg_overdue_days(db: Session) -> float:
+    """Vážené zpoždění PO splatnosti (kladné = dnů po splatnosti)."""
+    today = date.today()
+    wsum = 0.0
+    wtot = 0.0
+    for inv in db.query(Invoice).all():
+        if inv.status == InvoiceStatus.FULLY_SETTLED.value:
+            continue
+        open_amt = float(inv.amount) - float(inv.collected_amount or 0)
+        if open_amt <= 0:
+            continue
+        if inv.due_date >= today:
+            continue
+        overdue_days = (today - inv.due_date).days
+        wsum += overdue_days * open_amt
         wtot += open_amt
     return round(wsum / wtot, 1) if wtot else 0.0
 
@@ -213,7 +234,9 @@ def dashboard_kpis(db: Session) -> dict:
         "overdue_count": overdue_invoices_count(db),
         "unmatched_count": unmatched_n,
         "unmatched_czk_equiv": round(unmatched_czk, 2),
-        "avg_duration_open": weighted_avg_duration_open(db),
+        # Průměrná durace aktiv = dny do splatnosti (otevřené, ještě nesplatné); overdue samostatně níže v šabloně.
+        "avg_duration_open": weighted_avg_days_to_maturity(db),
+        "avg_overdue_days": weighted_avg_overdue_days(db),
         "risk_ok_rate": risk_ok_rate(db),
         "today": today,
     }

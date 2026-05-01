@@ -82,6 +82,8 @@ def risk_ok_for_ui(db: Session, debtor_id: int) -> tuple[str, str]:
     expired = age_days > ttl
     if chk.result == RiskResult.BLOCK.value:
         return "danger", "BLOCK"
+    if chk.result == RiskResult.EXPIRED.value:
+        return "danger", "EXPIRED"
     if expired:
         return "warning", "expirováno"
     if chk.result == RiskResult.WARNING.value:

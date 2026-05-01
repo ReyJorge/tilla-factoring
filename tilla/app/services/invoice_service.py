@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,19 @@ from app.services import settings_service
 def days_relative_to_due(inv: Invoice, today: date | None = None) -> int:
     today = today or date.today()
     return (inv.due_date - today).days
+
+
+def expected_collection_date(inv: Invoice, today: date | None = None) -> date:
+    """Reálnější ETA inkasa než pouhá splatnost — před splatností splatnost + typický lag, po splatnosti obnova od dneška."""
+    today = today or date.today()
+    open_amt = float(inv.amount) - float(inv.collected_amount or 0)
+    if open_amt <= 0.005:
+        return inv.due_date
+    lag_after_due = 5 + (inv.id % 13)
+    if inv.due_date >= today:
+        return inv.due_date + timedelta(days=lag_after_due)
+    recovery = 4 + (inv.id % 22)
+    return today + timedelta(days=max(recovery, 3))
 
 
 def refresh_auto_overdue(db: Session, inv: Invoice, today: date | None = None) -> bool:
