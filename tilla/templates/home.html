@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}TILLA — embedded factoring{% endblock %}
+{% block content %}
+<section class="hero-tilla rounded-4 p-5 mb-5">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-7">
+      <h1 class="display-5 fw-bold mb-3">TILLA</h1>
+      <p class="lead mb-2">Získejte peníze z faktur dříve.</p>
+      <p class="text-muted-soft mb-4">Embedded factoring pro firmy, které chtějí stabilní cashflow přímo ve svém ERP.</p>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-tilla-accent btn-lg" href="/dashboard">Otevřít demo dashboard</a>
+        <a class="btn btn-outline-light btn-lg" href="mailto:partnerstvi@tilla.demo">Požádat o financování</a>
+        <a class="btn btn-outline-light btn-lg" href="#partner">Partnerství s ERP</a>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="hero-panel p-4 rounded-3">
+        <div class="d-flex align-items-center mb-3"><span class="brand-mark">T</span><strong>TILLA inside ERP</strong></div>
+        <p class="small mb-0">Demo níže ukazuje řídicí panel pro factoring, settlement a risk — stejný zážitek lze vložit do vašeho systému jako embedded modul.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mb-5">
+  <h2 class="h4 fw-semibold mb-4">Jak to funguje</h2>
+  <div class="row g-4">
+    <div class="col-md-6 col-xl-3">
+      <div class="card tilla-card h-100 p-4"><span class="step-num">1</span><p class="mb-0 fw-semibold mt-2">Dodavatel vystaví fakturu</p><p class="small text-muted-soft mt-2 mb-0">Záznam vstoupí do schvalování a párování dokumentů.</p></div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card tilla-card h-100 p-4"><span class="step-num">2</span><p class="mb-0 fw-semibold mt-2">Odběratel potvrdí plnění</p><p class="small text-muted-soft mt-2 mb-0">Anchor workflow snižuje riziko před odkupem.</p></div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card tilla-card h-100 p-4"><span class="step-num">3</span><p class="mb-0 fw-semibold mt-2">TILLA vyplatí zálohu</p><p class="small text-muted-soft mt-2 mb-0">Částka podle nastaveného procenta a fee pásem.</p></div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card tilla-card h-100 p-4"><span class="step-num">4</span><p class="mb-0 fw-semibold mt-2">Po inkasu settlement</p><p class="small text-muted-soft mt-2 mb-0">Zápočty a vyrovnání úrokovaných i neúrokovaných položek.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="mb-5 row g-4">
+  <div class="col-lg-6">
+    <h2 class="h4 fw-semibold mb-3">Pro koho je TILLA</h2>
+    <ul class="list-unstyled mb-0">
+      <li class="mb-2"><strong>Dodavatelé</strong> — rychlejší obrat pohledávek bez složité administrativy.</li>
+      <li class="mb-2"><strong>Anchors / odběratelé</strong> — přehled nad potvrzeními a inkasem.</li>
+      <li><strong>ERP partneři</strong> — přidaná hodnota pro uživatele bez změny jejich procesů.</li>
+    </ul>
+  </div>
+  <div class="col-lg-6" id="partner">
+    <h2 class="h4 fw-semibold mb-3">Embedded in ERP</h2>
+    <div class="card tilla-card p-4 mb-0">
+      <p class="fw-semibold mb-2">TILLA inside Byznys ERP</p>
+      <p class="small text-muted-soft mb-0">Modul může běžet jako vnořené okno přímo v ERP — uživatel vidí schválení faktur, zálohy a settlement bez přepínání mezi aplikacemi. Demo aplikace níže je samostatný shell se stejným obsahem.</p>
+      <a class="btn btn-sm btn-tilla-primary mt-3" href="/dashboard">Vstoupit do demo</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

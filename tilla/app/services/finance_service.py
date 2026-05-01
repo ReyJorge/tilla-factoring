@@ -31,6 +31,32 @@ def match_payment(db: Session, payment_id: int, invoice_id: int) -> Payment:
     return pay
 
 
+def settlement_global_aggregate(db: Session, limit: int = 500) -> dict:
+    rows = (
+        db.query(OffsetEntry).order_by(OffsetEntry.movement_date.desc()).limit(limit).all()
+    )
+    bearing = [r for r in rows if r.interest_bearing]
+    nonbearing = [r for r in rows if not r.interest_bearing]
+    total = sum(float(r.amount_czk) for r in rows)
+    significance = "ok"
+    label = "vše v pořádku"
+    if abs(total) > 500_000:
+        significance = "problem"
+        label = "problém — významná nevyrovnanost portfolia"
+    elif abs(total) > 25_000:
+        significance = "attention"
+        label = "pozor — zkontrolujte položky"
+    return {
+        "bearing_rows": bearing,
+        "nonbearing_rows": nonbearing,
+        "total": total,
+        "bearing_sum": sum(float(r.amount_czk) for r in bearing),
+        "nonbearing_sum": sum(float(r.amount_czk) for r in nonbearing),
+        "significance": significance,
+        "label": label,
+    }
+
+
 def offset_client_totals(db: Session, client_id: int) -> dict:
     rows = db.query(OffsetEntry).filter(OffsetEntry.client_id == client_id).all()
     bearing = sum(float(r.amount_czk) for r in rows if r.interest_bearing)

@@ -20,6 +20,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     unmatched = dashboard_service.unmatched_payment_rows(db)
     offsets = dashboard_service.unsettled_offsets_clients(db)
     reminders = dashboard_service.reminders_due(db)
+    kpis = dashboard_service.dashboard_kpis(db)
     return templates.TemplateResponse(
         "dashboard.html",
         template_ctx(
@@ -30,6 +31,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             unmatched=unmatched,
             offsets=offsets,
             reminders=reminders,
+            kpis=kpis,
             today=date.today(),
         ),
     )

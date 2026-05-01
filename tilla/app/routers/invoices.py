@@ -5,10 +5,12 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from sqlalchemy import or_
+
 from app.constants import INVOICE_STATUS_LABELS_CS as STATUS_LABELS_CS
 from app.database import get_db
-from app.models import EmailLog, Invoice, InvoiceFile, InvoiceStatus, TaxDocument
-from app.services import invoice_service, settings_service
+from app.models import EmailLog, Invoice, InvoiceFile, InvoiceStatus, Payment, TaxDocument
+from app.services import finance_service, invoice_service, settings_service
 from app.template_helpers import add_flash, template_ctx, templates, uploads_dir
 
 router = APIRouter(tags=["invoices"])
@@ -22,6 +24,14 @@ def invoice_detail(invoice_id: int, request: Request, db: Session = Depends(get_
     invoice_service.refresh_auto_overdue(db, inv)
     db.commit()
     payments = sorted(inv.payments, key=lambda p: p.payment_date, reverse=True)
+    unmatched_for_inv = (
+        db.query(Payment)
+        .filter(Payment.matched_invoice_id.is_(None))
+        .filter(or_(Payment.probable_invoice_id == invoice_id, Payment.currency == inv.currency))
+        .order_by(Payment.payment_date.desc())
+        .limit(40)
+        .all()
+    )
     return templates.TemplateResponse(
         "invoices/detail.html",
         template_ctx(
@@ -30,10 +40,28 @@ def invoice_detail(invoice_id: int, request: Request, db: Session = Depends(get_
             invoice=inv,
             status_labels=STATUS_LABELS_CS,
             payments=payments,
+            unmatched_for_inv=unmatched_for_inv,
             days=invoice_service.days_relative_to_due(inv),
             InvoiceStatus=InvoiceStatus,
         ),
     )
+
+
+@router.post("/invoices/{invoice_id}/payment-match")
+def invoice_payment_match(
+    invoice_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    payment_id: int = Form(...),
+):
+    try:
+        finance_service.match_payment(db, payment_id, invoice_id)
+        db.commit()
+        add_flash(request, "Platba spárována s fakturou.")
+    except ValueError as e:
+        db.rollback()
+        add_flash(request, str(e))
+    return RedirectResponse(url=f"/invoices/{invoice_id}", status_code=303)
 
 
 @router.get("/invoices/{invoice_id}/edit")
@@ -41,6 +69,14 @@ def invoice_edit_form(invoice_id: int, request: Request, db: Session = Depends(g
     inv = db.get(Invoice, invoice_id)
     if not inv:
         raise HTTPException(status_code=404)
+    unmatched_for_inv = (
+        db.query(Payment)
+        .filter(Payment.matched_invoice_id.is_(None))
+        .filter(or_(Payment.probable_invoice_id == invoice_id, Payment.currency == inv.currency))
+        .order_by(Payment.payment_date.desc())
+        .limit(40)
+        .all()
+    )
     return templates.TemplateResponse(
         "invoices/edit.html",
         template_ctx(
@@ -48,6 +84,7 @@ def invoice_edit_form(invoice_id: int, request: Request, db: Session = Depends(g
             nav_active="clients",
             invoice=inv,
             status_labels=STATUS_LABELS_CS,
+            unmatched_for_inv=unmatched_for_inv,
         ),
     )
 

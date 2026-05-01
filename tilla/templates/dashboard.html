@@ -1,15 +1,58 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<h1 class="h3 mb-4 fw-semibold">Dashboard</h1>
-<div class="row g-3">
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item active">Dashboard</li></ol></nav>
+
+<h1 class="h3 mb-4 fw-semibold">Portfolio přehled</h1>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="kpi-chip">
+      <div class="kpi-label">Otevřená expozice</div>
+      <div class="kpi-value text-end">{{ '{:,.0f}'.format(kpis.open_exposure_czk).replace(',', ' ') }} <span class="kpi-unit">CZK≈</span></div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="kpi-chip">
+      <div class="kpi-label">Aktivní faktury</div>
+      <div class="kpi-value text-end">{{ kpis.active_invoices }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="kpi-chip kpi-chip-warn">
+      <div class="kpi-label">Po splatnosti</div>
+      <div class="kpi-value text-end">{{ kpis.overdue_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="kpi-chip">
+      <div class="kpi-label">Nespárované platby</div>
+      <div class="kpi-value text-end">{{ kpis.unmatched_count }}</div>
+      <div class="kpi-sub text-end text-muted-soft small">{{ '{:,.0f}'.format(kpis.unmatched_czk_equiv).replace(',', ' ') }} CZK≈</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="kpi-chip">
+      <div class="kpi-label">Průměrná durace aktiv</div>
+      <div class="kpi-value text-end">{{ kpis.avg_duration_open }} <span class="kpi-unit">d</span></div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4 col-xl-2">
+    <div class="kpi-chip">
+      <div class="kpi-label">Risk / Approval OK</div>
+      <div class="kpi-value text-end">{{ kpis.risk_ok_rate }}<span class="kpi-unit">%</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
   <div class="col-lg-6">
     <div class="card tilla-card h-100">
       <div class="card-header">Faktury po splatnosti</div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm mb-0 tilla-table align-middle">
-            <thead><tr><th>Dny</th><th>VS</th><th>Klient</th><th>Odběratel</th></tr></thead>
+          <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
+            <thead><tr><th>Dny</th><th>VS</th><th>Klient</th><th>Odběratel</th><th class="text-end">Částka</th></tr></thead>
             <tbody>
               {% for inv in overdue %}
               <tr>
@@ -17,9 +60,10 @@
                 <td><a href="/invoices/{{ inv.id }}">{{ inv.variable_symbol }}</a></td>
                 <td><a href="/clients/{{ inv.client_id }}">{{ inv.client.short_name }}</a></td>
                 <td><a href="/debtors/{{ inv.debtor_id }}">{{ inv.debtor.name[:42] }}</a></td>
+                <td class="text-end text-nowrap">{{ inv.amount }} {{ inv.currency }}</td>
               </tr>
               {% else %}
-              <tr><td colspan="4" class="text-muted p-3">Žádné po splatnosti v náhledu.</td></tr>
+              <tr><td colspan="5" class="text-muted p-3">Žádné po splatnosti v náhledu.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -32,15 +76,15 @@
       <div class="card-header">Faktury k finalizaci</div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm mb-0 tilla-table align-middle">
-            <thead><tr><th>VS</th><th>Klient</th><th>Inkasováno</th><th>Částka</th></tr></thead>
+          <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
+            <thead><tr><th>VS</th><th>Klient</th><th class="text-end">Inkasováno</th><th class="text-end">Částka</th></tr></thead>
             <tbody>
               {% for inv in finalize_list %}
               <tr>
                 <td><a href="/invoices/{{ inv.id }}">{{ inv.variable_symbol }}</a></td>
                 <td><a href="/clients/{{ inv.client_id }}">{{ inv.client.short_name }}</a></td>
-                <td>{{ inv.collected_amount }}</td>
-                <td>{{ inv.amount }} {{ inv.currency }}</td>
+                <td class="text-end">{{ inv.collected_amount }}</td>
+                <td class="text-end text-nowrap">{{ inv.amount }} {{ inv.currency }}</td>
               </tr>
               {% else %}
               <tr><td colspan="4" class="text-muted p-3">Žádné kandidáty.</td></tr>
@@ -56,15 +100,15 @@
       <div class="card-header">Nespárované platby</div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm mb-0 tilla-table align-middle">
-            <thead><tr><th>Částka</th><th>Měna</th><th>Plátce</th><th></th></tr></thead>
+          <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
+            <thead><tr><th class="text-end">Částka</th><th>Měna</th><th>Plátce</th><th>Datum</th></tr></thead>
             <tbody>
               {% for p in unmatched %}
               <tr>
-                <td>{{ p.amount }}</td>
+                <td class="text-end">{{ p.amount }}</td>
                 <td>{{ p.currency }}</td>
-                <td>{{ p.payer_name }}</td>
-                <td><a class="btn btn-sm btn-tilla-accent" href="/finance/unmatched-payments">Párovat</a></td>
+                <td>{{ p.payer_name[:48] }}</td>
+                <td>{{ p.payment_date }}</td>
               </tr>
               {% else %}
               <tr><td colspan="4" class="text-muted p-3">Vše spárováno.</td></tr>
@@ -72,24 +116,26 @@
             </tbody>
           </table>
         </div>
+        <div class="p-2 border-top"><a class="btn btn-sm btn-tilla-accent" href="/finance/unmatched-payments">Správa párování</a></div>
       </div>
     </div>
   </div>
   <div class="col-lg-6">
     <div class="card tilla-card h-100">
-      <div class="card-header">Nevyrovnané zápočty (Settlement)</div>
+      <div class="card-header">Nevyrovnané zápočty / Settlement</div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm mb-0 tilla-table align-middle">
-            <thead><tr><th>Klient</th><th>Bilance CZK</th></tr></thead>
+          <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
+            <thead><tr><th>Klient</th><th class="text-end">Bilance CZK</th><th>Stav</th></tr></thead>
             <tbody>
               {% for row in offsets %}
               <tr>
                 <td><a href="/clients/{{ row.client.id }}/setoffs">{{ row.client.name }}</a></td>
-                <td>{{ '%.2f'|format(row.balance) }}</td>
+                <td class="text-end">{{ '{:.2f}'.format(row.balance) }}</td>
+                <td><span class="badge {% if row.status_key=='danger' %}badge-status-danger{% elif row.status_key=='warning' %}badge-status-warn{% else %}badge-status-ok{% endif %}">{{ row.status_label }}</span></td>
               </tr>
               {% else %}
-              <tr><td colspan="2" class="text-muted p-3">Žádné významné odchylky.</td></tr>
+              <tr><td colspan="3" class="text-muted p-3">Žádné významné odchylky.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -102,18 +148,19 @@
       <div class="card-header">Upomínky k odeslání</div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm mb-0 tilla-table align-middle">
-            <thead><tr><th>Datum</th><th>Úroveň</th><th>Faktura</th><th>Klient</th></tr></thead>
+          <table class="table table-sm mb-0 tilla-table table-striped-rows align-middle">
+            <thead><tr><th>Datum</th><th>Úroveň</th><th>Faktura</th><th>Klient</th><th>Odběratel</th></tr></thead>
             <tbody>
               {% for r in reminders %}
               <tr>
                 <td>{{ r.scheduled_for }}</td>
-                <td>{{ r.level }}</td>
-                <td><a href="/invoices/{{ r.invoice_id }}">#{{ r.invoice_id }} {{ r.invoice.variable_symbol }}</a></td>
+                <td><span class="badge badge-status-warn">{{ r.level }}</span></td>
+                <td><a href="/invoices/{{ r.invoice_id }}">{{ r.invoice.variable_symbol }}</a></td>
                 <td><a href="/clients/{{ r.invoice.client_id }}">{{ r.invoice.client.short_name }}</a></td>
+                <td>{{ r.invoice.debtor.name[:52] }}</td>
               </tr>
               {% else %}
-              <tr><td colspan="4" class="text-muted p-3">Žádné naplánované.</td></tr>
+              <tr><td colspan="5" class="text-muted p-3">Žádné naplánované.</td></tr>
               {% endfor %}
             </tbody>
           </table>

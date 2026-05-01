@@ -1,28 +1,34 @@
 {% extends "base.html" %}
 {% block title %}{{ client.name }}{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item"><a href="/clients">Klienti</a></li><li class="breadcrumb-item active">{{ client.short_name }}</li></ol></nav>
+
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h1 class="h3 fw-semibold mb-0">{{ client.name }}</h1>
   <div class="d-flex gap-2">
-    <a class="btn btn-tilla-primary btn-sm" href="/clients/{{ client.id }}/invoices">Faktury klienta</a>
+    <a class="btn btn-tilla-primary btn-sm" href="/clients/{{ client.id }}/invoices">Plná stránka faktur</a>
     <a class="btn btn-outline-secondary btn-sm" href="/clients/{{ client.id }}/setoffs">Settlement / zápočty</a>
     <a class="btn btn-tilla-accent btn-sm" href="/clients/{{ client.id }}/edit">Upravit</a>
   </div>
 </div>
+
 <div class="row g-3 mb-4">
-  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Číslo smlouvy</div><div class="fw-semibold">{{ client.contract_number }}</div></div></div>
-  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">IČ</div><div class="fw-semibold">{{ client.ic }}</div></div></div>
-  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Email</div><div class="fw-semibold">{{ client.email }}</div></div></div>
-  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Odpovědný</div><div class="fw-semibold">{{ client.responsible_user.full_name if client.responsible_user else '—' }}</div></div></div>
+  <div class="col-md-4 col-lg-3"><div class="stat-pill"><div class="text-muted-soft small">Číslo smlouvy</div><div class="fw-semibold">{{ client.contract_number }}</div></div></div>
+  <div class="col-md-4 col-lg-3"><div class="stat-pill"><div class="text-muted-soft small">IČ</div><div class="fw-semibold">{{ client.ic }}</div></div></div>
+  <div class="col-md-4 col-lg-3"><div class="stat-pill"><div class="text-muted-soft small">Sídlo</div><div class="fw-semibold">{{ client.headquarters or '—' }}</div></div></div>
+  <div class="col-md-4 col-lg-3"><div class="stat-pill"><div class="text-muted-soft small">Jazyk</div><div class="fw-semibold">{% if client.communication_language=='en' %}English{% else %}Čeština{% endif %}</div></div></div>
+  <div class="col-md-6 col-lg-4"><div class="stat-pill"><div class="text-muted-soft small">Hlavní email</div><div class="fw-semibold text-truncate">{{ client.email }}</div></div></div>
+  <div class="col-md-6 col-lg-4"><div class="stat-pill"><div class="text-muted-soft small">Odpovědný pracovník</div><div class="fw-semibold">{{ client.responsible_user.full_name if client.responsible_user else '—' }}</div></div></div>
 </div>
+
 <div class="row g-3 mb-4">
   <div class="col-md-2"><div class="stat-pill"><div class="text-muted-soft small">Počet faktur</div><div class="fw-semibold">{{ summary.invoice_count }}</div></div></div>
-  <div class="col-md-2"><div class="stat-pill"><div class="text-muted-soft small">Suma CZK</div><div class="fw-semibold">{{ '%.2f'|format(summary.sums.get('CZK', 0)) }}</div></div></div>
-  <div class="col-md-2"><div class="stat-pill"><div class="text-muted-soft small">Suma EUR</div><div class="fw-semibold">{{ '%.2f'|format(summary.sums.get('EUR', 0)) }}</div></div></div>
-  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Zálohy CZK / EUR</div><div class="fw-semibold">{{ '%.2f'|format(summary.advances.get('CZK', 0)) }} / {{ '%.2f'|format(summary.advances.get('EUR', 0)) }}</div></div></div>
-  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Otevřená expozice (≈CZK)</div><div class="fw-semibold">{{ '%.2f'|format(summary.open_exposure.czk_equiv) }}</div></div></div>
+  <div class="col-md-2"><div class="stat-pill"><div class="text-muted-soft small">Suma CZK</div><div class="fw-semibold text-end">{{ '%.2f'|format(summary.sums.get('CZK', 0)) }}</div></div></div>
+  <div class="col-md-2"><div class="stat-pill"><div class="text-muted-soft small">Suma EUR</div><div class="fw-semibold text-end">{{ '%.2f'|format(summary.sums.get('EUR', 0)) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Zálohy CZK / EUR</div><div class="fw-semibold text-end">{{ '%.2f'|format(summary.advances.get('CZK', 0)) }} / {{ '%.2f'|format(summary.advances.get('EUR', 0)) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Zápočty celkem</div><div class="fw-semibold text-end">{{ '%.2f'|format(summary.offsets_czk) }} CZK</div></div></div>
+  <div class="col-md-12 col-lg-12"><div class="stat-pill"><div class="text-muted-soft small">Otevřená expozice (≈CZK ekvivalent)</div><div class="fw-semibold text-end">{{ '%.2f'|format(summary.open_exposure.czk_equiv) }}</div></div></div>
 </div>
-<p class="text-muted-soft small mb-4">Zápočty celkem: <strong>{{ '%.2f'|format(summary.offsets_czk) }} CZK</strong></p>
 
 <h2 class="h5 fw-semibold mb-2">Nastavení — náhled</h2>
 <div class="table-responsive card tilla-card mb-4">
@@ -34,6 +40,51 @@
         <td>{{ row.label }} <span class="text-muted-soft small">({{ row.key }})</span></td>
         <td>{{ row.global_value }}</td>
         <td>{% if row.client_value %}<span class="badge badge-status-warn">{{ row.client_value }}</span>{% else %}<span class="text-muted-soft">převzato</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2 class="h5 fw-semibold mb-2">Faktury klienta</h2>
+<div class="btn-group btn-group-sm mb-3 flex-wrap">
+  <a class="btn btn-outline-secondary {% if inv_filter=='' %}active{% endif %}" href="/clients/{{ client.id }}">Vše</a>
+  <a class="btn btn-outline-secondary {% if inv_filter=='new_purchased' %}active{% endif %}" href="/clients/{{ client.id }}?inv_filter=new_purchased">Nové / odkoupené</a>
+  <a class="btn btn-outline-secondary {% if inv_filter=='archive' %}active{% endif %}" href="/clients/{{ client.id }}?inv_filter=archive">Archiv</a>
+  <a class="btn btn-outline-secondary {% if inv_filter=='before_due' %}active{% endif %}" href="/clients/{{ client.id }}?inv_filter=before_due">Před splatností</a>
+  <a class="btn btn-outline-secondary {% if inv_filter=='overdue' %}active{% endif %}" href="/clients/{{ client.id }}?inv_filter=overdue">Po splatnosti</a>
+  <a class="btn btn-outline-secondary {% if inv_filter=='pending_confirm' %}active{% endif %}" href="/clients/{{ client.id }}?inv_filter=pending_confirm">Čeká na potvrzení</a>
+  <a class="btn btn-outline-secondary {% if inv_filter=='problem' %}active{% endif %}" href="/clients/{{ client.id }}?inv_filter=problem">Problémové</a>
+</div>
+
+<div class="table-responsive card tilla-card mb-5">
+  <table class="table table-sm mb-0 tilla-table align-middle table-striped-rows">
+    <thead>
+      <tr>
+        <th>ID</th><th>VS</th><th>Odběratel</th><th>Stav</th><th>Vystaveno</th><th>Splatnost</th><th>Dny</th><th class="text-end">Částka</th><th class="text-end">Poplatek %</th><th class="text-end">Záloha</th><th>Odkup</th><th class="text-end">Inkasováno</th><th>Risk</th><th>Upom.</th><th>Akce</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inv in invoices %}
+      {% set dd = (inv.due_date - today).days %}
+      <tr>
+        <td><a href="/invoices/{{ inv.id }}">{{ inv.id }}</a></td>
+        <td>{{ inv.variable_symbol }}</td>
+        <td><a href="/debtors/{{ inv.debtor_id }}">{{ inv.debtor.name[:32] }}</a></td>
+        <td><span class="badge {% if inv.status=='fully_settled' %}badge-status-ok{% elif inv.status in ['problem','overdue'] %}badge-status-danger{% elif inv.status in ['purchased','advance_financed','awaiting_collection'] %}badge-status-financed{% elif inv.status=='pending_debtor_confirm' %}badge-status-warn{% else %}badge-status-wait{% endif %}">{{ status_labels.get(inv.status, inv.status) }}</span></td>
+        <td>{{ inv.issued_date }}</td>
+        <td>{{ inv.due_date }}</td>
+        <td>{{ dd }}</td>
+        <td class="text-end text-nowrap">{{ inv.amount }} {{ inv.currency }}</td>
+        <td class="text-end">{{ inv.fee_percent }}</td>
+        <td class="text-end">{{ inv.advance_amount }}</td>
+        <td>{{ inv.purchased_date or '—' }}</td>
+        <td class="text-end">{{ inv.collected_amount }}</td>
+        <td><span class="badge {% if debtor_risk[inv.debtor_id]=='BLOCK' %}badge-status-danger{% elif debtor_risk[inv.debtor_id]=='WARNING' %}badge-status-warn{% elif debtor_risk[inv.debtor_id]=='OK' %}badge-status-ok{% else %}badge-status-wait{% endif %}">{{ debtor_risk[inv.debtor_id] }}</span></td>
+        <td>{{ inv.reminder_level }}</td>
+        <td class="text-nowrap">
+          <a class="btn btn-sm btn-outline-secondary py-0" href="/invoices/{{ inv.id }}/edit">Edit</a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

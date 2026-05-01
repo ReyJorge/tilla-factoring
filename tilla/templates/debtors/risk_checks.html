@@ -1,18 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Lustrace{% endblock %}
+{% block title %}Lustrace odběratelů{% endblock %}
 {% block content %}
-<h1 class="h3 mb-4 fw-semibold">Lustrace odběratelů</h1>
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item"><a href="/debtors">Odběratelé</a></li><li class="breadcrumb-item active">Risk checks</li></ol></nav>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <h1 class="h3 fw-semibold mb-0">Lustrace / Risk checks</h1>
+  <form method="post" action="/debtors/risk-checks/run"><button class="btn btn-tilla-accent">Lustrovat</button></form>
+</div>
+
+<p class="text-muted-soft small mb-4">Simulovaný protokol: insolvence, spolehlivý plátce (daňové), exekuce, CESE, rating → výsledný stav.</p>
+
 <div class="table-responsive card tilla-card">
-  <table class="table mb-0 tilla-table align-middle">
-    <thead><tr><th>Datum</th><th>Výsledek</th><th>Název</th><th>Protokol</th><th></th></tr></thead>
+  <table class="table mb-0 tilla-table table-striped-rows align-middle">
+    <thead><tr><th>Datum</th><th>Výsledek</th><th>Název</th><th>Protokol</th><th>Akce</th></tr></thead>
     <tbody>
-      {% for row in rows %}
+      {% for rc in rows %}
       <tr>
-        <td>{{ row.checked_at }}</td>
-        <td><span class="badge {% if row.result=='BLOCK' %}badge-status-danger{% elif row.result=='WARNING' %}badge-status-warn{% else %}badge-status-ok{% endif %}">{{ row.result }}</span></td>
-        <td><a href="/debtors/{{ row.debtor_id }}">{{ row.debtor.name }}</a></td>
-        <td class="small text-muted-soft">insolvence:{{ row.protocol_insolvency }}, spolehlivý_plátce:{{ row.protocol_taxpayer }}, exekuce:{{ row.protocol_execution }}, CESE:{{ row.protocol_cese }}, rating:{{ row.protocol_rating }}</td>
-        <td><form method="post" action="/debtors/{{ row.debtor_id }}/screen"><button class="btn btn-sm btn-tilla-accent py-0">Lustrovat</button></form></td>
+        <td>{{ rc.checked_at }}</td>
+        <td>
+          <span class="badge {% if rc.result=='BLOCK' %}badge-status-danger{% elif rc.result=='WARNING' %}badge-status-warn{% else %}badge-status-ok{% endif %}">{{ rc.result }}</span>
+        </td>
+        <td><a href="/debtors/{{ rc.debtor_id }}">{{ rc.debtor.name }}</a></td>
+        <td class="small text-muted-soft">{{ protocol_lines[rc.id] }}</td>
+        <td class="text-nowrap">
+          <a class="btn btn-sm btn-outline-secondary py-0" href="/debtors/{{ rc.debtor_id }}">Detail</a>
+          <form class="d-inline" method="post" action="/debtors/{{ rc.debtor_id }}/screen"><button class="btn btn-sm btn-tilla-accent py-0">Znovu</button></form>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

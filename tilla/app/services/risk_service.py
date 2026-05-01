@@ -14,7 +14,7 @@ def protocol_summary(rc: RiskCheck) -> str:
         f"insolvence:{rc.protocol_insolvency}",
         f"spolehlivy_platce:{rc.protocol_taxpayer}",
         f"exekuce:{rc.protocol_execution}",
-        f"CESE:{rc.protocol_cese}",
+        f"cese:{rc.protocol_cese}",
         f"rating:{rc.protocol_rating}",
         f"result:{rc.result}",
     ]

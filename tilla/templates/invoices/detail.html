@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Faktura {{ invoice.variable_symbol }}{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item"><a href="/clients/{{ invoice.client_id }}">{{ invoice.client.short_name }}</a></li><li class="breadcrumb-item active">VS {{ invoice.variable_symbol }}</li></ol></nav>
+
 <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
   <div>
     <h1 class="h3 fw-semibold mb-1">Faktura {{ invoice.variable_symbol }}</h1>
@@ -12,17 +14,66 @@
   </div>
 </div>
 
-<div class="row g-3 mb-4">
+<div class="row g-4">
   <div class="col-lg-8">
-    <div class="card tilla-card p-4">
-      <div class="row g-3">
-        <div class="col-md-4"><div class="text-muted-soft small">Stav</div><div class="fs-5">{{ status_labels.get(invoice.status, invoice.status) }}</div></div>
-        <div class="col-md-4"><div class="text-muted-soft small">Částka</div><div class="fw-semibold">{{ invoice.amount }} {{ invoice.currency }}</div></div>
-        <div class="col-md-4"><div class="text-muted-soft small">Záloha</div><div>{{ invoice.advance_amount }}</div></div>
-        <div class="col-md-4"><div class="text-muted-soft small">Poplatek %</div><div>{{ invoice.fee_percent }}</div></div>
-        <div class="col-md-4"><div class="text-muted-soft small">Splatnost</div><div>{{ invoice.due_date }} <span class="badge badge-status-wait">Δ {{ days }} dní</span></div></div>
-        <div class="col-md-4"><div class="text-muted-soft small">Inkaso</div><div>{{ invoice.collected_amount }}</div></div>
-        <div class="col-12"><div class="text-muted-soft small">Poznámka</div><div>{{ invoice.note or '—' }}</div></div>
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-b" type="button">Základní</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-p" type="button">Platby</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-f" type="button">Soubory</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-t" type="button">Daňové doklady</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-e" type="button">Emaily</button></li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane fade show active card tilla-card p-4" id="tab-b">
+        <div class="row g-3">
+          <div class="col-md-6"><div class="text-muted-soft small">Stav</div><span class="badge {% if invoice.status=='fully_settled' %}badge-status-ok{% elif invoice.status in ['problem','overdue'] %}badge-status-danger{% elif invoice.status in ['purchased','advance_financed','awaiting_collection'] %}badge-status-financed{% elif invoice.status=='pending_debtor_confirm' %}badge-status-warn{% else %}badge-status-wait{% endif %}">{{ status_labels.get(invoice.status, invoice.status) }}</span></div>
+          <div class="col-md-6"><div class="text-muted-soft small">VS / číslo FA</div><div class="fw-semibold">{{ invoice.variable_symbol }}{% if invoice.invoice_number %} · {{ invoice.invoice_number }}{% endif %}</div></div>
+          <div class="col-md-4"><div class="text-muted-soft small">Částka</div><div class="fw-semibold text-end">{{ invoice.amount }} {{ invoice.currency }}</div></div>
+          <div class="col-md-4"><div class="text-muted-soft small">Záloha</div><div class="text-end">{{ invoice.advance_amount }}</div></div>
+          <div class="col-md-4"><div class="text-muted-soft small">Poplatek %</div><div class="text-end">{{ invoice.fee_percent }}</div></div>
+          <div class="col-md-4"><div class="text-muted-soft small">Vystaveno</div>{{ invoice.issued_date }}</div>
+          <div class="col-md-4"><div class="text-muted-soft small">Zadání</div>{{ invoice.submitted_date }}</div>
+          <div class="col-md-4"><div class="text-muted-soft small">Splatnost</div>{{ invoice.due_date }} <span class="badge badge-status-wait">Δ {{ days }} d</span></div>
+          <div class="col-md-6"><div class="text-muted-soft small">Inkasováno</div><div class="text-end">{{ invoice.collected_amount }}</div></div>
+          <div class="col-md-6"><div class="text-muted-soft small">Otevřená částka</div><div class="text-end fw-semibold">{{ '%.2f'|format(invoice.amount|float - invoice.collected_amount|float) }} {{ invoice.currency }}</div></div>
+          <div class="col-12"><div class="text-muted-soft small">Poznámka</div>{{ invoice.note or '—' }}</div>
+        </div>
+      </div>
+      <div class="tab-pane fade card tilla-card p-4" id="tab-p">
+        <h2 class="h6 fw-semibold">Spárované platby</h2>
+        <div class="table-responsive mb-4">
+          <table class="table table-sm tilla-table"><thead><tr><th>Datum</th><th class="text-end">Částka</th><th>Měna</th><th>Plátce</th></tr></thead><tbody>
+            {% for p in payments %}<tr><td>{{ p.payment_date }}</td><td class="text-end">{{ p.amount }}</td><td>{{ p.currency }}</td><td>{{ p.payer_name }}</td></tr>
+            {% else %}<tr><td colspan="4" class="text-muted">Žádné párování.</td></tr>{% endfor %}
+          </tbody></table>
+        </div>
+        <h2 class="h6 fw-semibold">Nespárované — spárovat na tuto fakturu</h2>
+        {% if unmatched_for_inv %}
+        <form method="post" action="/invoices/{{ invoice.id }}/payment-match" class="row g-2 align-items-end">
+          <div class="col-md-8">
+            <select class="form-select form-select-sm" name="payment_id" required>
+              {% for p in unmatched_for_inv %}
+              <option value="{{ p.id }}">{{ p.payment_date }} · {{ p.amount }} {{ p.currency }} · {{ p.payer_name[:40] }} · VS {{ p.variable_symbol_hint or '—' }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4"><button class="btn btn-sm btn-tilla-primary w-100">Spárovat</button></div>
+        </form>
+        {% else %}<p class="text-muted small mb-0">Žádné vhodné nespárované platby (stejná měna nebo pravděpodobná faktura).</p>{% endif %}
+        <p class="small text-muted-soft mt-2 mb-0"><a href="/finance/unmatched-payments">Všechny nespárované platby</a></p>
+      </div>
+      <div class="tab-pane fade card tilla-card p-4" id="tab-f">
+        <ul class="mb-0">{% for f in invoice.files %}<li>{{ f.original_filename }} <span class="text-muted-soft">({{ f.file_type }})</span></li>{% else %}<li class="text-muted">Žádné soubory</li>{% endfor %}</ul>
+      </div>
+      <div class="tab-pane fade card tilla-card p-4" id="tab-t">
+        <div class="table-responsive">
+          <table class="table table-sm tilla-table"><thead><tr><th>Vystaveno</th><th>DUZP</th><th class="text-end">Základ</th><th class="text-end">Celkem</th></tr></thead><tbody>
+            {% for t in invoice.tax_documents %}<tr><td>{{ t.issued_date }}</td><td>{{ t.tax_supply_date }}</td><td class="text-end">{{ t.base_amount }}</td><td class="text-end">{{ t.total_amount }} {{ t.currency }}</td></tr>{% else %}<tr><td colspan="4" class="text-muted">Žádné doklady</td></tr>{% endfor %}
+          </tbody></table>
+        </div>
+      </div>
+      <div class="tab-pane fade card tilla-card p-4" id="tab-e">
+        <ul class="small mb-0">{% for e in invoice.emails %}<li class="mb-2"><strong>{{ e.sent_at }}</strong><br>{{ e.subject }}<br><span class="text-muted-soft">{{ e.recipients }}</span></li>{% else %}<li class="text-muted">Žádné emaily</li>{% endfor %}</ul>
       </div>
     </div>
   </div>
@@ -47,16 +98,6 @@
       <p class="small text-muted-soft mb-2">Úroveň: {{ invoice.reminder_level }} / 5</p>
       <form method="post" action="/invoices/{{ invoice.id }}/reminder"><button class="btn btn-sm btn-tilla-primary">Simulovat odeslání upomínky</button></form>
     </div>
-  </div>
-</div>
-
-<div class="card tilla-card">
-  <div class="card-header">Platby spárované s fakturou</div>
-  <div class="card-body p-0 table-responsive">
-    <table class="table table-sm mb-0 tilla-table"><thead><tr><th>Datum</th><th>Částka</th><th>Měna</th><th>Plátce</th></tr></thead><tbody>
-      {% for p in payments %}<tr><td>{{ p.payment_date }}</td><td>{{ p.amount }}</td><td>{{ p.currency }}</td><td>{{ p.payer_name }}</td></tr>
-      {% else %}<tr><td colspan="4" class="text-muted p-3">Žádné párování.</td></tr>{% endfor %}
-    </tbody></table>
   </div>
 </div>
 {% endblock %}

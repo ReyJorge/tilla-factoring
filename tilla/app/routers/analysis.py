@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Debtor, InvoiceStatus
-from app.services import invoice_service
+from app.models import Debtor, Invoice, InvoiceStatus
+from app.services import invoice_service, settings_service
 from app.template_helpers import template_ctx, templates
 
 router = APIRouter(tags=["analysis"], prefix="/analysis")
@@ -16,9 +16,8 @@ def analysis_debtors(request: Request, db: Session = Depends(get_db)):
     today = date.today()
     period_days = 365
     start = today - timedelta(days=period_days)
-    rows_out = []
-    chart_labels = []
-    chart_values = []
+    ttl = int(settings_service.global_map(db)["odberatel.riskTTL"].replace(",", "."))
+    rows_out: list[dict] = []
     duration_weighted = 0.0
     duration_amt = 0.0
 
@@ -28,7 +27,9 @@ def analysis_debtors(request: Request, db: Session = Depends(get_db)):
         open_inv = [
             i
             for i in d.invoices
-            if i.status not in {InvoiceStatus.FULLY_SETTLED.value, InvoiceStatus.PROBLEM.value}
+            if i.status
+            not in {InvoiceStatus.FULLY_SETTLED.value, InvoiceStatus.PROBLEM.value}
+            and i.status != InvoiceStatus.NEW.value
         ]
         hist_cnt = len(hist)
         hist_val = sum(float(i.amount) for i in hist)
@@ -56,6 +57,13 @@ def analysis_debtors(request: Request, db: Session = Depends(get_db)):
             if d.risk_checks
             else None
         )
+        risk_expired = False
+        if chk:
+            risk_expired = (today - chk.checked_at.date()).days > ttl
+
+        ins_amt = float(d.insurance_amount or 0)
+        if d.insurance_records:
+            ins_amt = max(ins_amt, max(float(r.insured_limit) for r in d.insurance_records))
 
         rows_out.append(
             {
@@ -70,8 +78,8 @@ def analysis_debtors(request: Request, db: Session = Depends(get_db)):
                 "avg_closed_days": avg_closed_days,
                 "eta": eta,
                 "risk": chk.result if chk else "—",
-                "risk_expired": False,
-                "insured": float(d.insurance_amount or 0),
+                "risk_expired": risk_expired,
+                "insured": ins_amt,
             }
         )
 
@@ -80,11 +88,20 @@ def analysis_debtors(request: Request, db: Session = Depends(get_db)):
             duration_weighted += invoice_service.days_relative_to_due(i, today) * float(i.amount)
 
     rows_out.sort(key=lambda r: r["hist_val"], reverse=True)
-    top = rows_out[:10]
-    chart_labels = [r["debtor"].name[:28] for r in top]
-    chart_values = [round(r["hist_val"], 2) for r in top]
-
     avg_asset_duration = round(duration_weighted / duration_amt, 1) if duration_amt else 0.0
+
+    top_vol = rows_out[:10]
+    chart_performance_labels = [r["debtor"].name[:28] for r in top_vol]
+    chart_performance_values = [round(r["hist_val"], 2) for r in top_vol]
+    top_open = sorted(rows_out, key=lambda r: r["open_val"], reverse=True)[:10]
+    chart_duration_labels = [r["debtor"].name[:28] for r in top_open]
+    chart_duration_values = [r["avg_open_days"] for r in top_open]
+
+    chart_eta_labels = [r["debtor"].name[:28] for r in top_open]
+    chart_eta_values = [max((r["eta"] - today).days, 0) for r in top_open]
+
+    inv_open_cnt = db.query(Invoice).filter(Invoice.status != InvoiceStatus.FULLY_SETTLED.value).count()
+    inv_closed_cnt = db.query(Invoice).filter(Invoice.status == InvoiceStatus.FULLY_SETTLED.value).count()
 
     return templates.TemplateResponse(
         "analysis/debtors.html",
@@ -92,9 +109,16 @@ def analysis_debtors(request: Request, db: Session = Depends(get_db)):
             request,
             nav_active="analysis",
             rows=rows_out,
-            chart_labels=chart_labels,
-            chart_values=chart_values,
+            chart_duration_labels=chart_duration_labels,
+            chart_duration_values=chart_duration_values,
+            chart_eta_labels=chart_eta_labels,
+            chart_eta_values=chart_eta_values,
+            chart_performance_labels=chart_performance_labels,
+            chart_performance_values=chart_performance_values,
+            pie_open=inv_open_cnt,
+            pie_closed=inv_closed_cnt,
             avg_asset_duration=avg_asset_duration,
             period_days=period_days,
+            today=today,
         ),
     )

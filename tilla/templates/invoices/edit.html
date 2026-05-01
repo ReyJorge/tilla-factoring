@@ -2,6 +2,7 @@
 {% block title %}Úprava faktury {{ invoice.variable_symbol }}{% endblock %}
 {% block content %}
 <h1 class="h3 mb-3 fw-semibold">Úprava faktury {{ invoice.variable_symbol }}</h1>
+<p class="small text-muted-soft mb-3"><a href="/clients/{{ invoice.client_id }}">{{ invoice.client.name }}</a> · <a href="/debtors/{{ invoice.debtor_id }}">{{ invoice.debtor.name }}</a></p>
 <ul class="nav nav-tabs mb-3">
   <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-basic" type="button">Základní</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pay" type="button">Platby</button></li>
@@ -28,8 +29,26 @@
   </div>
 
   <div class="tab-pane fade card tilla-card p-4" id="tab-pay">
-    <p class="text-muted-soft small">Seznam plateb viz také detail faktury.</p>
-    <a class="btn btn-sm btn-outline-secondary" href="/invoices/{{ invoice.id }}">Zpět na přehled</a>
+    <div class="table-responsive mb-3">
+      <table class="table table-sm tilla-table"><thead><tr><th>Datum</th><th class="text-end">Částka</th><th>Měna</th><th>Plátce</th></tr></thead><tbody>
+        {% for p in invoice.payments|sort(attribute='payment_date', reverse=true) %}<tr><td>{{ p.payment_date }}</td><td class="text-end">{{ p.amount }}</td><td>{{ p.currency }}</td><td>{{ p.payer_name }}</td></tr>
+        {% else %}<tr><td colspan="4" class="text-muted">Žádné párování.</td></tr>{% endfor %}
+      </tbody></table>
+    </div>
+    {% if unmatched_for_inv %}
+    <form method="post" action="/invoices/{{ invoice.id }}/payment-match" class="row g-2 align-items-end">
+      <div class="col-md-9">
+        <label class="small text-muted-soft">Vyberte platbu</label>
+        <select class="form-select form-select-sm" name="payment_id" required>
+          {% for p in unmatched_for_inv %}
+          <option value="{{ p.id }}">{{ p.payment_date }} · {{ p.amount }} {{ p.currency }} · {{ p.payer_name[:36] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3"><button class="btn btn-sm btn-tilla-primary w-100 mt-3">Spárovat</button></div>
+    </form>
+    {% endif %}
+    <p class="small mt-2 mb-0"><a href="/finance/unmatched-payments">Správa všech nespárovaných plateb</a></p>
   </div>
 
   <div class="tab-pane fade card tilla-card p-4" id="tab-files">

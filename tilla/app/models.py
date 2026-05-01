@@ -99,6 +99,7 @@ class Client(Base):
     iban: Mapped[str | None] = mapped_column(String(34), nullable=True)
     swift: Mapped[str | None] = mapped_column(String(16), nullable=True)
     salutation: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    headquarters: Mapped[str | None] = mapped_column(String(255), nullable=True)
     responsible_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 
     responsible_user: Mapped[User | None] = relationship(back_populates="managed_clients")
@@ -167,7 +168,10 @@ class Invoice(Base):
     files: Mapped[list["InvoiceFile"]] = relationship(
         back_populates="invoice", cascade="all, delete-orphan"
     )
-    payments: Mapped[list["Payment"]] = relationship(back_populates="invoice")
+    payments: Mapped[list["Payment"]] = relationship(
+        back_populates="invoice",
+        foreign_keys="Payment.matched_invoice_id",
+    )
     reminders: Mapped[list["Reminder"]] = relationship(back_populates="invoice")
     tax_documents: Mapped[list["TaxDocument"]] = relationship(back_populates="invoice")
     emails: Mapped[list["EmailLog"]] = relationship(back_populates="invoice")
@@ -192,6 +196,8 @@ class PaymentBatch(Base):
     reference: Mapped[str] = mapped_column(String(80), nullable=False)
     batch_date: Mapped[date] = mapped_column(Date, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    batch_type: Mapped[str] = mapped_column(String(80), default="SEPA import")
+    status: Mapped[str] = mapped_column(String(40), default="processed")
 
     payments: Mapped[list["Payment"]] = relationship(back_populates="batch")
 
@@ -206,10 +212,17 @@ class Payment(Base):
     payer_name: Mapped[str] = mapped_column(String(255), nullable=False)
     payment_date: Mapped[date] = mapped_column(Date, nullable=False)
     matched_invoice_id: Mapped[int | None] = mapped_column(ForeignKey("invoices.id"), nullable=True)
+    probable_invoice_id: Mapped[int | None] = mapped_column(ForeignKey("invoices.id"), nullable=True)
     variable_symbol_hint: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     batch: Mapped[PaymentBatch | None] = relationship(back_populates="payments")
-    invoice: Mapped[Invoice | None] = relationship(back_populates="payments")
+    invoice: Mapped[Invoice | None] = relationship(
+        back_populates="payments",
+        foreign_keys=[matched_invoice_id],
+    )
+    probable_invoice: Mapped[Invoice | None] = relationship(
+        foreign_keys=[probable_invoice_id],
+    )
 
 
 class RiskCheck(Base):

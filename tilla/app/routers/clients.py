@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.constants import INVOICE_STATUS_LABELS_CS
 from app.models import Client, ClientSetting, Contact, Debtor, Invoice, InvoiceStatus, User
-from app.services import finance_service, invoice_service, settings_service
+from app.services import finance_service, invoice_service, risk_service, settings_service
 from app.template_helpers import add_flash, template_ctx, templates
 
 router = APIRouter(tags=["clients"])
@@ -67,10 +67,26 @@ def list_clients(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/clients/{client_id}")
-def client_detail(client_id: int, request: Request, db: Session = Depends(get_db)):
+def client_detail(
+    client_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    inv_filter: str | None = None,
+):
     client = db.get(Client, client_id)
     if not client:
         raise HTTPException(status_code=404)
+    today = date.today()
+    for inv in client.invoices:
+        invoice_service.refresh_auto_overdue(db, inv, today)
+    db.commit()
+    invoices_sorted = sorted(client.invoices, key=lambda x: x.due_date, reverse=True)
+    invoices_filtered = _filter_invoices(invoices_sorted, inv_filter)
+    debtor_ids = {inv.debtor_id for inv in client.invoices}
+    debtor_risk: dict[int, str] = {}
+    for did in debtor_ids:
+        chk = risk_service.latest_check(db, did)
+        debtor_risk[did] = chk.result if chk else "—"
     return templates.TemplateResponse(
         "clients/detail.html",
         template_ctx(
@@ -79,6 +95,12 @@ def client_detail(client_id: int, request: Request, db: Session = Depends(get_db
             client=client,
             summary=client_summary(db, client),
             settings_table=paired_settings_table(db, client),
+            invoices=invoices_filtered,
+            inv_filter=inv_filter or "",
+            debtor_risk=debtor_risk,
+            status_labels=INVOICE_STATUS_LABELS_CS,
+            InvoiceStatus=InvoiceStatus,
+            today=today,
         ),
     )
 
@@ -119,6 +141,7 @@ def client_edit_save(
     swift: str | None = Form(None),
     salutation: str | None = Form(None),
     responsible_user_id: int | None = Form(None),
+    headquarters: str | None = Form(None),
 ):
     client = db.get(Client, client_id)
     if not client:
@@ -130,6 +153,7 @@ def client_edit_save(
     client.dic = (dic or "").strip() or None
     client.communication_language = communication_language
     client.email = email.strip()
+    client.headquarters = (headquarters or "").strip() or None
     client.bank_account_number = (bank_account_number or "").strip() or None
     client.bank_code = (bank_code or "").strip() or None
     client.iban = (iban or "").strip() or None
@@ -202,6 +226,22 @@ def _filter_invoices(invoices: list[Invoice], mode: str | None) -> list[Invoice]
         return [i for i in invoices if i.due_date >= today]
     if mode == "pending_confirm":
         return [i for i in invoices if i.status == InvoiceStatus.PENDING_DEBTOR_CONFIRM.value]
+    if mode == "problem":
+        return [i for i in invoices if i.status == InvoiceStatus.PROBLEM.value]
+    if mode == "archive":
+        return [i for i in invoices if i.status == InvoiceStatus.FULLY_SETTLED.value]
+    if mode == "new_purchased":
+        return [
+            i
+            for i in invoices
+            if i.status
+            in {
+                InvoiceStatus.NEW.value,
+                InvoiceStatus.PURCHASED.value,
+                InvoiceStatus.ADVANCE_FINANCED.value,
+                InvoiceStatus.AWAITING_COLLECTION.value,
+            }
+        ]
     if mode == "purchased":
         return [
             i
@@ -233,6 +273,11 @@ def client_invoices(
     invoices_sorted = sorted(client.invoices, key=lambda x: x.due_date, reverse=True)
     invoices_filtered = _filter_invoices(invoices_sorted, quick)
     debtors = db.query(Debtor).order_by(Debtor.name.asc()).limit(500).all()
+    debtor_ids = {inv.debtor_id for inv in client.invoices}
+    debtor_risk: dict[int, str] = {}
+    for did in debtor_ids:
+        chk = risk_service.latest_check(db, did)
+        debtor_risk[did] = chk.result if chk else "—"
     return templates.TemplateResponse(
         "clients/invoices.html",
         template_ctx(
@@ -246,6 +291,7 @@ def client_invoices(
             InvoiceStatus=InvoiceStatus,
             today=today,
             debtors=debtors,
+            debtor_risk=debtor_risk,
         ),
     )
 

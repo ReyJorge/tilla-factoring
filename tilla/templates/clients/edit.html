@@ -9,6 +9,7 @@
     <div class="col-md-4"><label class="form-label">DIČ</label><input class="form-control" name="dic" value="{{ client.dic or '' }}"></div>
     <div class="col-md-8"><label class="form-label">Název</label><input class="form-control" name="name" value="{{ client.name }}" required></div>
     <div class="col-md-4"><label class="form-label">Krátký název</label><input class="form-control" name="short_name" value="{{ client.short_name }}" required></div>
+    <div class="col-md-8"><label class="form-label">Sídlo</label><input class="form-control" name="headquarters" value="{{ client.headquarters or '' }}" placeholder="Město / adresa"></div>
     <div class="col-md-4"><label class="form-label">Jazyk</label>
       <select class="form-select" name="communication_language">
         <option value="cs" {% if client.communication_language=='cs' %}selected{% endif %}>čeština</option>

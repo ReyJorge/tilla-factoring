@@ -1,11 +1,12 @@
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Debtor, Invoice, InvoiceStatus
+from app.models import Debtor, Invoice, InvoiceStatus, RiskCheck
 from app.services import invoice_service, risk_service, settings_service
 from app.template_helpers import add_flash, template_ctx, templates
 
@@ -70,17 +71,56 @@ def debtor_metrics(db: Session, debtor: Debtor, period_days: int = 365):
     }
 
 
+@router.get("/debtors/risk-checks")
+def risk_checks_page(request: Request, db: Session = Depends(get_db)):
+    rows = db.query(RiskCheck).order_by(RiskCheck.checked_at.desc()).limit(250).all()
+    protocol_lines = {rc.id: risk_service.protocol_summary(rc) for rc in rows}
+    return templates.TemplateResponse(
+        "debtors/risk_checks.html",
+        template_ctx(request, nav_active="debtors", rows=rows, protocol_lines=protocol_lines),
+    )
+
+
+@router.post("/debtors/risk-checks/run")
+def risk_checks_run(request: Request, db: Session = Depends(get_db)):
+    debtors = db.query(Debtor).all()
+    if not debtors:
+        add_flash(request, "Žádný odběratel k lustraci.")
+        return RedirectResponse(url="/debtors/risk-checks", status_code=303)
+    debtor = random.choice(debtors)
+    risk_service.simulate_screening(db, debtor.id)
+    db.commit()
+    add_flash(request, f"Lustrace dokončena — {debtor.name}")
+    return RedirectResponse(url="/debtors/risk-checks", status_code=303)
+
+
 @router.get("/debtors")
 def debtor_list(request: Request, db: Session = Depends(get_db)):
     rows = db.query(Debtor).order_by(Debtor.name.asc()).all()
+    ttl = int(settings_service.global_map(db)["odberatel.riskTTL"].replace(",", "."))
     enriched = []
     for d in rows:
         chk = risk_service.latest_check(db, d.id)
-        ttl = int(settings_service.global_map(db)["odberatel.riskTTL"].replace(",", "."))
         expired = False
+        performed = None
+        risk_expiry = None
         if chk:
-            expired = (datetime.utcnow().date() - chk.checked_at.date()).days > ttl
-        enriched.append({"debtor": d, "check": chk, "expired": expired})
+            performed = chk.checked_at.date()
+            expired = (datetime.utcnow().date() - performed).days > ttl
+            risk_expiry = performed + timedelta(days=ttl)
+        ins_rec = None
+        if d.insurance_records:
+            ins_rec = max(d.insurance_records, key=lambda x: x.valid_from)
+        enriched.append(
+            {
+                "debtor": d,
+                "check": chk,
+                "expired": expired,
+                "performed": performed,
+                "risk_expiry": risk_expiry,
+                "ins_record": ins_rec,
+            }
+        )
     return templates.TemplateResponse(
         "debtors/list.html",
         template_ctx(request, nav_active="debtors", rows=enriched),

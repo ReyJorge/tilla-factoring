@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Faktury — {{ client.short_name }}{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item"><a href="/clients">Klienti</a></li><li class="breadcrumb-item"><a href="/clients/{{ client.id }}">{{ client.short_name }}</a></li><li class="breadcrumb-item active">Faktury</li></ol></nav>
+
 <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
   <div>
     <h1 class="h3 fw-semibold mb-1">Faktury klienta {{ client.name }}</h1>
@@ -18,10 +20,13 @@
 
 <div class="btn-group btn-group-sm mb-3 flex-wrap">
   <a class="btn btn-outline-secondary {% if quick=='' %}active{% endif %}" href="/clients/{{ client.id }}/invoices">Vše</a>
-  <a class="btn btn-outline-secondary {% if quick=='overdue' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=overdue">Po splatnosti</a>
+  <a class="btn btn-outline-secondary {% if quick=='new_purchased' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=new_purchased">Nové / odkoupené</a>
+  <a class="btn btn-outline-secondary {% if quick=='archive' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=archive">Archiv</a>
   <a class="btn btn-outline-secondary {% if quick=='before_due' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=before_due">Před splatností</a>
-  <a class="btn btn-outline-secondary {% if quick=='purchased' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=purchased">Financované</a>
+  <a class="btn btn-outline-secondary {% if quick=='overdue' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=overdue">Po splatnosti</a>
   <a class="btn btn-outline-secondary {% if quick=='pending_confirm' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=pending_confirm">Čeká na potvrzení</a>
+  <a class="btn btn-outline-secondary {% if quick=='problem' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=problem">Problémové</a>
+  <a class="btn btn-outline-secondary {% if quick=='purchased' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=purchased">Financované</a>
 </div>
 
 <div class="card tilla-card p-3 mb-4">
@@ -47,10 +52,10 @@
 </div>
 
 <div class="table-responsive card tilla-card">
-  <table class="table table-sm mb-0 tilla-table align-middle">
+  <table class="table table-sm mb-0 tilla-table align-middle table-striped-rows">
     <thead>
       <tr>
-        <th>ID</th><th>VS</th><th>Odběratel</th><th>Stav</th><th>Vystaveno</th><th>Splatnost</th><th>Dny</th><th>Částka</th><th>K %</th><th>Záloha</th><th>Inkasováno</th><th></th>
+        <th>ID</th><th>VS</th><th>Odběratel</th><th>Stav</th><th>Vystaveno</th><th>Splatnost</th><th>Dny</th><th class="text-end">Částka</th><th class="text-end">Poplatek %</th><th class="text-end">Záloha</th><th>Odkup</th><th class="text-end">Inkasováno</th><th>Risk</th><th>Upom.</th><th>Akce</th>
       </tr>
     </thead>
     <tbody>
@@ -64,10 +69,13 @@
         <td>{{ inv.issued_date }}</td>
         <td>{{ inv.due_date }}</td>
         <td>{{ dd }}</td>
-        <td>{{ inv.amount }} {{ inv.currency }}</td>
-        <td>{{ inv.fee_percent }}</td>
-        <td>{{ inv.advance_amount }}</td>
-        <td>{{ inv.collected_amount }}</td>
+        <td class="text-end text-nowrap">{{ inv.amount }} {{ inv.currency }}</td>
+        <td class="text-end">{{ inv.fee_percent }}</td>
+        <td class="text-end">{{ inv.advance_amount }}</td>
+        <td>{{ inv.purchased_date or '—' }}</td>
+        <td class="text-end">{{ inv.collected_amount }}</td>
+        <td><span class="badge {% if debtor_risk[inv.debtor_id]=='BLOCK' %}badge-status-danger{% elif debtor_risk[inv.debtor_id]=='WARNING' %}badge-status-warn{% elif debtor_risk[inv.debtor_id]=='OK' %}badge-status-ok{% else %}badge-status-wait{% endif %}">{{ debtor_risk[inv.debtor_id] }}</span></td>
+        <td>{{ inv.reminder_level }}</td>
         <td class="text-nowrap">
           <a class="btn btn-sm btn-outline-secondary py-0" href="/invoices/{{ inv.id }}/edit">Edit</a>
           <form class="d-inline" method="post" action="/invoices/{{ inv.id }}/delete" onsubmit="return confirm('Smazat fakturu?');"><button class="btn btn-sm btn-outline-danger py-0">×</button></form>

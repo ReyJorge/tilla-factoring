@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Odběratelé{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item active">Odběratelé</li></ol></nav>
+
 <h1 class="h3 mb-4 fw-semibold">Odběratelé / Anchors</h1>
-<div class="mb-3"><a class="btn btn-sm btn-tilla-primary" href="/debtors/risk-checks">Lustrace / Risk checks</a></div>
+<div class="mb-3 d-flex flex-wrap gap-2">
+  <a class="btn btn-sm btn-tilla-primary" href="/debtors/risk-checks">Lustrace / Risk checks</a>
+</div>
 
 <div class="card tilla-card p-4 mb-4">
   <h2 class="h6 fw-semibold">Přidat odběratele</h2>
@@ -16,23 +20,32 @@
 </div>
 
 <div class="table-responsive card tilla-card">
-  <table class="table mb-0 tilla-table align-middle">
-    <thead><tr><th>Název</th><th>IČ</th><th>Risk</th><th>Datum kontroly</th><th>Pojištění</th><th>Email</th><th>Země</th><th></th></tr></thead>
+  <table class="table mb-0 tilla-table align-middle table-striped-rows">
+    <thead><tr><th>Název</th><th>IČ</th><th>Riskcheck</th><th>Provedeno</th><th>Expirace</th><th class="text-end">Pojištění částka</th><th>Pojištění od</th><th>Email</th><th>Země</th><th>Akce</th></tr></thead>
     <tbody>
       {% for row in rows %}
       {% set chk = row.check %}
       <tr>
         <td><a href="/debtors/{{ row.debtor.id }}">{{ row.debtor.name }}</a></td>
         <td>{{ row.debtor.ic }}</td>
-        <td>{% if chk %}<span class="badge {% if chk.result=='BLOCK' %}badge-status-danger{% elif chk.result=='WARNING' %}badge-status-warn{% else %}badge-status-ok{% endif %}">{{ chk.result }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-        <td>{% if chk %}{{ chk.checked_at.date() }}{% if row.expired %} <span class="badge badge-status-warn">TTL</span>{% endif %}{% else %}—{% endif %}</td>
-        <td>{% if row.debtor.insurance_amount %}<span class="badge badge-status-ok">{{ row.debtor.insurance_amount }}</span>{% else %}—{% endif %}</td>
-        <td>{{ row.debtor.email or '—' }}</td>
+        <td>
+          {% if row.expired %}<span class="badge badge-status-danger">EXPIRED</span>
+          {% elif chk %}
+            {% if chk.result=='BLOCK' %}<span class="badge badge-status-danger">{{ chk.result }}</span>
+            {% elif chk.result=='WARNING' %}<span class="badge badge-status-warn">{{ chk.result }}</span>
+            {% else %}<span class="badge badge-status-ok">{{ chk.result }}</span>{% endif %}
+          {% else %}<span class="text-muted">—</span>{% endif %}
+        </td>
+        <td>{% if chk %}{{ row.performed }}{% else %}—{% endif %}</td>
+        <td>{% if row.risk_expiry %}{{ row.risk_expiry }}{% else %}—{% endif %}</td>
+        <td class="text-end">{% if row.ins_record %}{{ row.ins_record.insured_limit }}{% elif row.debtor.insurance_amount %}<span class="badge badge-status-ok">{{ row.debtor.insurance_amount }}</span>{% else %}—{% endif %}</td>
+        <td>{% if row.ins_record %}{{ row.ins_record.valid_from }}{% elif row.debtor.insurance_from %}{{ row.debtor.insurance_from }}{% else %}—{% endif %}</td>
+        <td class="small">{{ row.debtor.email or '—' }}</td>
         <td>{{ row.debtor.country_code }}</td>
         <td class="text-nowrap">
-          <a class="btn btn-sm btn-outline-secondary py-0" href="/debtors/{{ row.debtor.id }}">Detail</a>
           <form class="d-inline" method="post" action="/debtors/{{ row.debtor.id }}/screen"><button class="btn btn-sm btn-tilla-accent py-0">Lustrovat</button></form>
-          <form class="d-inline" method="post" action="/debtors/{{ row.debtor.id }}/delete" onsubmit="return confirm('Smazat bez faktur?');"><button class="btn btn-sm btn-outline-danger py-0">×</button></form>
+          <a class="btn btn-sm btn-outline-secondary py-0" href="/debtors/{{ row.debtor.id }}">Detail</a>
+          <a class="btn btn-sm btn-outline-secondary py-0" href="/debtors/{{ row.debtor.id }}">Editovat</a>
         </td>
       </tr>
       {% endfor %}

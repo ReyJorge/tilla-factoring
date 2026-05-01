@@ -125,3 +125,83 @@ body.tilla-body {
   color: var(--tilla-grey);
   font-size: 0.85rem;
 }
+
+.tilla-navbar.sticky-top {
+  z-index: 1030;
+}
+
+.tilla-breadcrumb {
+  font-size: 0.875rem;
+}
+
+.tilla-breadcrumb .breadcrumb-item a {
+  color: var(--tilla-navy-2);
+  text-decoration: none;
+}
+
+.tilla-breadcrumb .breadcrumb-item a:hover {
+  color: var(--tilla-gold);
+}
+
+.kpi-chip {
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
+  background: #fff;
+  border: 1px solid rgba(31, 45, 68, 0.07);
+  box-shadow: 0 6px 18px rgba(13, 27, 42, 0.06);
+  height: 100%;
+}
+
+.kpi-chip-warn {
+  border-color: rgba(234, 88, 12, 0.35);
+}
+
+.kpi-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tilla-grey);
+  margin-bottom: 0.35rem;
+}
+
+.kpi-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--tilla-navy);
+}
+
+.kpi-unit {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--tilla-grey);
+}
+
+.table-striped-rows tbody tr:nth-child(even) {
+  background-color: rgba(245, 242, 238, 0.65);
+}
+
+.table.tilla-table tbody tr:hover {
+  background-color: rgba(200, 169, 106, 0.12);
+}
+
+.hero-tilla {
+  background: linear-gradient(135deg, var(--tilla-navy) 0%, var(--tilla-navy-2) 100%);
+  color: #f9fafb;
+}
+
+.hero-panel {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(200, 169, 106, 0.35);
+}
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--tilla-gold);
+  color: var(--tilla-navy);
+  font-weight: 800;
+}

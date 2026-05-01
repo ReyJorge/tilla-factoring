@@ -63,6 +63,15 @@ def finance_match(
     return RedirectResponse(url="/finance/unmatched-payments", status_code=303)
 
 
+@router.get("/settlement")
+def finance_settlement(request: Request, db: Session = Depends(get_db)):
+    agg = finance_service.settlement_global_aggregate(db)
+    return templates.TemplateResponse(
+        "finance/settlement.html",
+        template_ctx(request, nav_active="finance", agg=agg),
+    )
+
+
 @router.get("/payment-batches")
 def finance_batches(request: Request, db: Session = Depends(get_db)):
     rows = db.query(PaymentBatch).order_by(PaymentBatch.batch_date.desc()).all()

@@ -1,12 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Platební dávky{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li><li class="breadcrumb-item active">Platební dávky</li></ol></nav>
+
 <h1 class="h3 mb-4 fw-semibold">Platební dávky</h1>
+
 <div class="table-responsive card tilla-card">
-  <table class="table mb-0 tilla-table"><thead><tr><th>Reference</th><th>Datum</th><th>Popis</th><th>Počet plateb</th></tr></thead><tbody>
-    {% for b in batches %}<tr>
-      <td>{{ b.reference }}</td><td>{{ b.batch_date }}</td><td>{{ b.description }}</td><td>{{ b.payments|length }}</td>
-    </tr>{% endfor %}
-  </tbody></table>
+  <table class="table mb-0 tilla-table align-middle table-striped-rows">
+    <thead><tr><th>Datum</th><th class="text-end">Počet plateb</th><th class="text-end">Suma</th><th>Stav</th><th>Typ dávky</th><th>Reference</th><th>Export</th></tr></thead>
+    <tbody>
+      {% for b in batches %}
+      {% set ns = namespace(total=0) %}
+      {% for p in b.payments %}{% set ns.total = ns.total + (p.amount|float) %}{% endfor %}
+      <tr>
+        <td>{{ b.batch_date }}</td>
+        <td class="text-end">{{ b.payments|length }}</td>
+        <td class="text-end">{{ '%.2f'|format(ns.total) }}</td>
+        <td><span class="badge badge-status-wait">{{ b.status }}</span></td>
+        <td>{{ b.batch_type }}</td>
+        <td>{{ b.reference }}</td>
+        <td><button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Demo">CSV</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}
