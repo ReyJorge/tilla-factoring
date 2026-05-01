@@ -34,6 +34,19 @@
   </div>
 </section>
 
+<section class="trust-strip mb-5 py-4 py-lg-5" aria-labelledby="trust-heading">
+  <div class="text-center mb-4">
+    <h2 id="trust-heading" class="section-title mb-2">Proč dodavatelé TILLU berou vážně</h2>
+    <p class="text-muted-soft small mb-0 mx-auto trust-strip-lead">Minimum bariér na vaší straně — maximum přehledu pro anchor.</p>
+  </div>
+  <div class="row g-3 g-lg-4 justify-content-center trust-points">
+    <div class="col-6 col-md-3"><div class="trust-point"><span class="trust-check">✓</span><span>Bez zástav</span></div></div>
+    <div class="col-6 col-md-3"><div class="trust-point"><span class="trust-check">✓</span><span>Bez změny banky</span></div></div>
+    <div class="col-6 col-md-3"><div class="trust-point"><span class="trust-check">✓</span><span>Bez složitých smluv</span></div></div>
+    <div class="col-6 col-md-3"><div class="trust-point"><span class="trust-check">✓</span><span>Bez zatížení odběratele</span></div></div>
+  </div>
+</section>
+
 <section class="mb-5 pb-2">
   <div class="text-center mb-4">
     <h2 class="section-title mb-2">Tok hodnoty</h2>
@@ -63,6 +76,19 @@
     <div class="workflow-step">
       <span class="workflow-dot"></span>
       <span class="workflow-label">Settlement</span>
+    </div>
+  </div>
+</section>
+
+<section class="erp-strip mb-5 py-3 px-3 px-lg-4 rounded-4" aria-label="Kompatibilita s ERP">
+  <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-between gap-3 gap-lg-4">
+    <span class="erp-strip-label small text-muted-soft text-uppercase fw-semibold mb-0 mb-lg-0 me-lg-3">Kompatibilita</span>
+    <div class="d-flex flex-wrap justify-content-center gap-2 erp-strip-badges">
+      <span class="erp-badge">Byznys</span>
+      <span class="erp-badge">Pohoda</span>
+      <span class="erp-badge">Helios</span>
+      <span class="erp-badge">ABRA</span>
+      <span class="erp-badge erp-badge-accent">API Ready</span>
     </div>
   </div>
 </section>
@@ -100,6 +126,39 @@
   </div>
 </section>
 
+<section class="mb-5 roi-section" aria-labelledby="roi-heading">
+  <div class="card tilla-card border-0 roi-calculator-card overflow-hidden">
+    <div class="row g-0">
+      <div class="col-lg-5 roi-calculator-aside p-4 p-lg-5">
+        <p class="roi-eyebrow mb-2">Rychlý odhad</p>
+        <h2 id="roi-heading" class="section-title text-white mb-3">Kolik obratu uvolníte?</h2>
+        <p class="small text-white-50 mb-0">Orientační výpočet uvolněného provozního kapitálu při reverse factoringu — zadejte měsíční objem faktur a splatnosti.</p>
+      </div>
+      <div class="col-lg-7 p-4 p-lg-5 bg-white">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold text-muted-soft" for="roi-volume">Měsíční objem faktur (Kč)</label>
+            <input type="number" class="form-control form-control-lg roi-input" id="roi-volume" value="8500000" min="0" step="100000">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold text-muted-soft" for="roi-due">Prům. splatnost (dny)</label>
+            <input type="number" class="form-control form-control-lg roi-input" id="roi-due" value="35" min="1" max="120" step="1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold text-muted-soft" for="roi-advance">Záloha (%)</label>
+            <input type="number" class="form-control form-control-lg roi-input" id="roi-advance" value="80" min="1" max="100" step="1">
+          </div>
+        </div>
+        <div class="roi-result-wrap mt-4 pt-4 border-top border-light-subtle">
+          <div class="small text-muted-soft text-uppercase fw-semibold mb-1">Odhad uvolnitelného obratu</div>
+          <div class="roi-result-value" id="roi-result">—</div>
+          <p class="small text-muted-soft mb-0 mt-2 roi-disclaimer">Model: průměrná „zatržená“ pohledávka ≈ měsíční objem × (splatnost / 30). Uvolnění ≈ tato částka × záloha %. Nezávazný ukazatel.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="mb-5 row g-5 align-items-start">
   <div class="col-lg-6">
     <h2 class="section-title mb-4">Pro koho je TILLA</h2>
@@ -120,4 +179,26 @@
     </div>
   </div>
 </section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  function fmtCZK(n) {
+    var x = Math.round(Math.max(0, n));
+    return x.toLocaleString('cs-CZ').replace(/\u00a0/g, ' ') + ' Kč';
+  }
+  function recalc() {
+    var vol = parseFloat(document.getElementById('roi-volume').value) || 0;
+    var due = parseFloat(document.getElementById('roi-due').value) || 0;
+    var adv = parseFloat(document.getElementById('roi-advance').value) || 0;
+    var avgStock = vol * (due / 30);
+    var released = avgStock * (adv / 100);
+    document.getElementById('roi-result').textContent = fmtCZK(released);
+  }
+  ['roi-volume', 'roi-due', 'roi-advance'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', recalc);
+  });
+  recalc();
+})();
+</script>
 {% endblock %}

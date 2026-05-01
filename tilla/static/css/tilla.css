@@ -8,12 +8,17 @@
   --tilla-grey: #64748b;
   --tilla-shadow: 0 4px 22px rgba(10, 22, 40, 0.06);
   --tilla-shadow-soft: 0 2px 12px rgba(10, 22, 40, 0.05);
+  --tilla-leading: 1.58;
+  --tilla-section-gap: clamp(2.5rem, 5vw, 3.75rem);
 }
 
 body.tilla-body {
   background: var(--tilla-offwhite);
   color: #111827;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+  font-size: 1.02rem;
+  line-height: var(--tilla-leading);
+  letter-spacing: 0.01em;
 }
 
 .tilla-navbar {
@@ -487,4 +492,173 @@ main.container-fluid {
 
 .hero-commercial .btn-link.text-white:hover {
   color: var(--tilla-gold) !important;
+}
+
+/* —— TILLA v4.5 typography & sales polish —— */
+
+.main-tilla-shell {
+  padding-top: clamp(1.75rem, 4vw, 2.75rem) !important;
+  padding-bottom: 6rem !important;
+}
+
+@media (min-width: 768px) {
+  .main-tilla-shell {
+    padding-bottom: 5.25rem !important;
+  }
+}
+
+.page-title-tilla {
+  letter-spacing: -0.035em;
+  font-weight: 650 !important;
+}
+
+.section-title {
+  line-height: 1.22;
+}
+
+.letter-spacing-tight {
+  letter-spacing: 0.08em !important;
+}
+
+.trust-strip-lead {
+  max-width: 36rem;
+}
+
+.trust-points .trust-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(21, 34, 56, 0.06);
+  box-shadow: var(--tilla-shadow-soft);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--tilla-navy);
+  height: 100%;
+}
+
+.trust-check {
+  color: var(--tilla-gold);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.erp-strip {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(247, 245, 242, 0.98));
+  border: 1px solid rgba(21, 34, 56, 0.06);
+  box-shadow: var(--tilla-shadow-soft);
+}
+
+.erp-strip-label {
+  letter-spacing: 0.11em !important;
+}
+
+.erp-badge {
+  display: inline-block;
+  padding: 0.4rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--tilla-navy);
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+.erp-badge-accent {
+  background: var(--tilla-gold);
+  color: var(--tilla-navy);
+}
+
+.roi-calculator-card {
+  box-shadow: 0 12px 36px rgba(10, 22, 40, 0.09);
+}
+
+.roi-calculator-aside {
+  background: linear-gradient(165deg, var(--tilla-navy) 0%, #132744 55%, var(--tilla-navy-2) 100%);
+}
+
+.roi-calculator-aside .section-title {
+  color: #fff !important;
+}
+
+.roi-eyebrow {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: var(--tilla-gold);
+}
+
+.roi-input {
+  border-radius: 10px !important;
+  border: 1px solid rgba(21, 34, 56, 0.12) !important;
+}
+
+.roi-result-value {
+  font-size: clamp(1.65rem, 4vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--tilla-navy);
+}
+
+.roi-disclaimer {
+  max-width: 38rem;
+  line-height: 1.45 !important;
+}
+
+.floating-pilot-cta {
+  position: fixed;
+  bottom: 1.35rem;
+  right: 1.35rem;
+  z-index: 1046;
+  padding: 0.85rem 1.35rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-decoration: none;
+  color: var(--tilla-navy) !important;
+  background: linear-gradient(135deg, var(--tilla-gold), #dfc089);
+  border: none;
+  box-shadow: 0 10px 28px rgba(10, 22, 40, 0.18), 0 2px 8px rgba(201, 174, 114, 0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.floating-pilot-cta:hover {
+  transform: translateY(-2px);
+  color: var(--tilla-navy) !important;
+  box-shadow: 0 14px 34px rgba(10, 22, 40, 0.22);
+}
+
+@media (max-width: 575.98px) {
+  .floating-pilot-cta {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    text-align: center;
+    border-radius: 12px;
+  }
+}
+
+.partner-embed-banner {
+  background: linear-gradient(115deg, var(--tilla-navy) 0%, var(--tilla-navy-2) 100%);
+  box-shadow: var(--tilla-shadow);
+}
+
+.dashboard-view-switch .btn-group .btn {
+  border-radius: 8px !important;
+}
+
+.dashboard-view-switch .btn-outline-secondary {
+  border-color: rgba(21, 34, 56, 0.18);
+  color: var(--tilla-navy-2);
+}
+
+.dashboard-view-switch .btn-outline-secondary:hover {
+  border-color: var(--tilla-gold);
+  background: rgba(201, 174, 114, 0.12);
+  color: var(--tilla-navy);
 }

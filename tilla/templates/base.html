@@ -48,7 +48,7 @@
     </div>
   </nav>
 
-  <main class="container-fluid px-lg-5 py-5 flex-grow-1">
+  <main class="container-fluid px-lg-5 py-5 flex-grow-1 main-tilla-shell">
     {% if flashes %}
       <div class="flash-stack mb-3">
         {% for m in flashes %}
@@ -58,6 +58,8 @@
     {% endif %}
     {% block content %}{% endblock %}
   </main>
+
+  <a href="mailto:demo@tilla.cz?subject=Pilotn%C3%AD%20provoz%20TILLA" class="floating-pilot-cta">Chci pilotní provoz</a>
 
   <footer class="footer-mini py-3 px-lg-5 mt-auto">
     <div class="container-fluid px-lg-5 d-flex justify-content-between flex-wrap gap-2">
