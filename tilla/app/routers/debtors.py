@@ -97,7 +97,7 @@ def risk_checks_run(request: Request, db: Session = Depends(get_db)):
 @router.get("/debtors")
 def debtor_list(request: Request, db: Session = Depends(get_db)):
     rows = db.query(Debtor).order_by(Debtor.name.asc()).all()
-    ttl = int(settings_service.global_map(db)["odberatel.riskTTL"].replace(",", "."))
+    ttl = settings_service.global_int(db, "odberatel.riskTTL", settings_service.DEFAULT_ODBERATEL_RISK_TTL)
     enriched = []
     for d in rows:
         chk = risk_service.latest_check(db, d.id)

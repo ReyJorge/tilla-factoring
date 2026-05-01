@@ -16,7 +16,7 @@ def analysis_debtors(request: Request, db: Session = Depends(get_db)):
     today = date.today()
     period_days = 365
     start = today - timedelta(days=period_days)
-    ttl = int(settings_service.global_map(db)["odberatel.riskTTL"].replace(",", "."))
+    ttl = settings_service.global_int(db, "odberatel.riskTTL", settings_service.DEFAULT_ODBERATEL_RISK_TTL)
     rows_out: list[dict] = []
     duration_weighted = 0.0
     duration_amt = 0.0

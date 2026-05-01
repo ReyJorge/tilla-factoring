@@ -77,7 +77,7 @@ def risk_ok_for_ui(db: Session, debtor_id: int) -> tuple[str, str]:
     chk = latest_check(db, debtor_id)
     if not chk:
         return "unknown", "bez kontroly"
-    ttl = int(settings_service.global_map(db)["odberatel.riskTTL"].replace(",", "."))
+    ttl = settings_service.global_int(db, "odberatel.riskTTL", settings_service.DEFAULT_ODBERATEL_RISK_TTL)
     age_days = (datetime.utcnow().date() - chk.checked_at.date()).days
     expired = age_days > ttl
     if chk.result == RiskResult.BLOCK.value:

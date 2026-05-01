@@ -86,7 +86,7 @@ def client_open_exposure(db: Session, client_id: int) -> dict[str, float]:
     )
     czk = 0.0
     eur = 0.0
-    fx = float(settings_service.global_map(db)["kurz.EUR"].replace(",", "."))
+    fx = settings_service.global_float(db, "kurz.EUR", settings_service.DEFAULT_KURZ_EUR)
     for inv in rows:
         amt = float(inv.amount) - float(inv.collected_amount or 0)
         if inv.currency == "CZK":
@@ -115,7 +115,7 @@ def debtor_open_exposure(db: Session, debtor_id: int) -> dict[str, float]:
     )
     czk = 0.0
     eur = 0.0
-    fx = float(settings_service.global_map(db)["kurz.EUR"].replace(",", "."))
+    fx = settings_service.global_float(db, "kurz.EUR", settings_service.DEFAULT_KURZ_EUR)
     for inv in rows:
         amt = float(inv.amount) - float(inv.collected_amount or 0)
         if inv.currency == "CZK":
@@ -198,7 +198,9 @@ def validate_purchase_allowed(db: Session, inv: Invoice) -> tuple[bool, str]:
     if not debtor:
         return False, "Odběratel neexistuje."
     chk = latest_risk_check(db, debtor.id)
-    ttl = int(settings_service.merged_settings(db, inv.client_id)["odberatel.riskTTL"].replace(",", "."))
+    merged = settings_service.merged_settings(db, inv.client_id)
+    ttl_raw = merged.get("odberatel.riskTTL", settings_service.DEFAULT_ODBERATEL_RISK_TTL)
+    ttl = int(float(str(ttl_raw).replace(",", ".")))
     if not chk:
         return False, "Chybí risk check."
     age_days = (datetime.utcnow().date() - chk.checked_at.date()).days
@@ -206,7 +208,8 @@ def validate_purchase_allowed(db: Session, inv: Invoice) -> tuple[bool, str]:
         return False, "Risk check expiroval."
     if chk.result == RiskResult.BLOCK.value:
         return False, "Risk check má výsledek BLOCK — odkup zakázán."
-    max_k = float(settings_service.merged_settings(db, inv.client_id)["faktura.maxKoncentrace"].replace(",", "."))
+    max_raw = merged.get("faktura.maxKoncentrace", "20")
+    max_k = float(str(max_raw).replace(",", "."))
     conc = concentration_ratio(db, inv.client_id, inv.debtor_id)
     if conc > max_k and conc > 0:
         return False, f"Překročena maximální koncentrace ({conc}% > {max_k}%)."

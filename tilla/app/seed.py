@@ -96,7 +96,7 @@ def seed() -> None:
     db.flush()
 
     defaults = {
-        "kurz.EUR": "25.80",
+        "kurz.EUR": "25.00",
         "dph": "21",
         "faktura.maxKoncentrace": "20",
         "faktura.minOdberatele": "5",
@@ -117,7 +117,10 @@ def seed() -> None:
     }
     label_map = {k: lab for k, _, lab in SETTING_KEYS}
     for key, val in defaults.items():
-        db.add(GlobalSetting(key=key, value=val, description=label_map.get(key)))
+        desc = label_map.get(key)
+        if key == "kurz.EUR":
+            desc = "Demo FX rate EUR to CZK"
+        db.add(GlobalSetting(key=key, value=val, description=desc))
 
     clients_payload = [
         {"nm": "Šlechta transport, s.r.o.", "sn": "SlechtaTrans", "ic": "27900266", "contract": "2019013", "hq": "Praha 4", "email": "finance@slechta.demo"},

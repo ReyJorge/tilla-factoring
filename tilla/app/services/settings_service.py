@@ -13,6 +13,12 @@ def _parse_int(val: str) -> int:
     return int(float(val.replace(",", ".")))
 
 
+# Fallback hodnoty, když v DB chybí řádek GlobalSetting (staré schéma / prázdná tabulka).
+# Demo kurz EUR→CZK při chybějícím kurz.EUR — aplikační kód používá .get(..., DEFAULT_KURZ_EUR).
+DEFAULT_KURZ_EUR = "25.00"
+DEFAULT_ODBERATEL_RISK_TTL = "30"
+
+
 SETTING_KEYS = [
     ("kurz.EUR", "float", "Kurz EUR"),
     ("dph", "float", "Standardní sazba DPH (%)"),
@@ -38,6 +44,16 @@ SETTING_KEYS = [
 def global_map(db: Session) -> dict[str, str]:
     rows = db.query(GlobalSetting).all()
     return {r.key: r.value for r in rows}
+
+
+def global_float(db: Session, key: str, default_str: str) -> float:
+    raw = global_map(db).get(key, default_str)
+    return float(str(raw).replace(",", "."))
+
+
+def global_int(db: Session, key: str, default_str: str) -> int:
+    raw = global_map(db).get(key, default_str)
+    return int(float(str(raw).replace(",", ".")))
 
 
 def merged_settings(db: Session, client_id: int | None) -> dict[str, str]:

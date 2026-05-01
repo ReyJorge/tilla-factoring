@@ -100,7 +100,8 @@ def reminders_due(db: Session, limit: int = 30) -> list[Reminder]:
 
 
 def portfolio_open_exposure_czk_equiv(db: Session) -> float:
-    fx = float(settings_service.global_map(db)["kurz.EUR"].replace(",", "."))
+    # Převod EUR expozice: kurz.EUR z tabulky global_settings; chybí-li záznam, demo výchozí 25.00 CZK/EUR.
+    fx = settings_service.global_float(db, "kurz.EUR", settings_service.DEFAULT_KURZ_EUR)
     tot = 0.0
     for inv in (
         db.query(Invoice)
@@ -155,7 +156,7 @@ def unmatched_payments_stats(db: Session) -> tuple[int, float]:
     rows = db.query(Payment).filter(Payment.matched_invoice_id.is_(None)).all()
     if not rows:
         return 0, 0.0
-    fx = float(settings_service.global_map(db)["kurz.EUR"].replace(",", "."))
+    fx = settings_service.global_float(db, "kurz.EUR", settings_service.DEFAULT_KURZ_EUR)
     czk_eq = 0.0
     for p in rows:
         amt = float(p.amount)
@@ -183,7 +184,7 @@ def weighted_avg_duration_open(db: Session) -> float:
 
 
 def risk_ok_rate(db: Session) -> float:
-    ttl = int(settings_service.global_map(db)["odberatel.riskTTL"].replace(",", "."))
+    ttl = settings_service.global_int(db, "odberatel.riskTTL", settings_service.DEFAULT_ODBERATEL_RISK_TTL)
     debtors = db.query(Debtor).all()
     if not debtors:
         return 100.0
