@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Globální nastavení{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Globální nastavení systému</h1>
+<form method="post" action="/settings/global" class="card tilla-card p-4">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead><tr><th>Klíč</th><th>Popis</th><th>Hodnota</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td><code>{{ row.key }}</code></td>
+          <td>{{ row.description or '' }}</td>
+          <td style="width:25%"><input class="form-control form-control-sm" name="{{ row.key.replace('.', '_') }}" value="{{ row.value }}"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <button class="btn btn-tilla-primary mt-3">Uložit</button>
+</form>
+{% endblock %}

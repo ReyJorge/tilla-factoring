@@ -1,0 +1,9 @@
+[build]
+  publish = "netlify-public"
+
+# Nahraďte PLACEHOLDER_SUBDOMAIN skutečným poddoménem z Render (bez https://), např. tilla-web-xxxx
+[[redirects]]
+  from = "/*"
+  to = "https://PLACEHOLDER_SUBDOMAIN.onrender.com/:splat"
+  status = 302
+  force = true

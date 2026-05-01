@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Nespárované platby{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Nespárované platby · ruční párování</h1>
+<div class="row g-4">
+  {% for p in payments %}
+  <div class="col-lg-6">
+    <div class="card tilla-card p-3">
+      <div class="d-flex justify-content-between"><strong>{{ p.amount }} {{ p.currency }}</strong><span class="text-muted-soft small">{{ p.payment_date }}</span></div>
+      <div class="small">{{ p.payer_name }}</div>
+      <div class="small text-muted-soft">VS hint: {{ p.variable_symbol_hint }}</div>
+      <form method="post" action="/finance/unmatched-payments/match" class="mt-2 d-flex gap-2 align-items-center flex-wrap">
+        <input type="hidden" name="payment_id" value="{{ p.id }}">
+        <select class="form-select form-select-sm" name="invoice_id" style="max-width:260px">
+          {% for inv in invoices %}<option value="{{ inv.id }}">#{{ inv.id }} {{ inv.variable_symbol }} — {{ inv.client.short_name }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-sm btn-tilla-primary">Spárovat</button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted">Žádné nespárované platby.</p>
+  {% endfor %}
+</div>
+{% endblock %}

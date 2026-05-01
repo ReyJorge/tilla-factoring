@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Úroky ze záloh{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Výpisy úroků ze záloh</h1>
+<div class="table-responsive card tilla-card">
+  <table class="table table-sm mb-0 tilla-table"><thead><tr><th>Měsíc</th><th>Faktura</th><th>VS</th><th>Úrok CZK</th></tr></thead><tbody>
+    {% for r in rows %}<tr>
+      <td>{{ r.period_month }}</td><td><a href="/invoices/{{ r.invoice_id }}">{{ r.invoice_id }}</a></td><td>{{ r.invoice.variable_symbol }}</td><td>{{ r.interest_amount_czk }}</td>
+    </tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

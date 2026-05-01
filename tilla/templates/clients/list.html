@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Klienti{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Klienti</h1>
+<div class="table-responsive card tilla-card">
+  <table class="table mb-0 tilla-table align-middle">
+    <thead>
+      <tr>
+        <th>Název</th><th>Smlouva</th><th>IČ</th><th>Faktury</th><th>Suma CZK</th><th>Suma EUR</th><th>Zápočty CZK</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for client, s in clients %}
+      <tr>
+        <td><a href="/clients/{{ client.id }}">{{ client.name }}</a></td>
+        <td>{{ client.contract_number }}</td>
+        <td>{{ client.ic }}</td>
+        <td>{{ s.invoice_count }}</td>
+        <td>{{ '%.2f'|format(s.sums.get('CZK', 0)) }}</td>
+        <td>{{ '%.2f'|format(s.sums.get('EUR', 0)) }}</td>
+        <td>{{ '%.2f'|format(s.offsets_czk) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Settlement — {{ client.short_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h1 class="h3 fw-semibold mb-0">Settlement — zápočty · {{ client.name }}</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-sm btn-tilla-primary" href="/clients/{{ client.id }}/invoices">Faktury klienta</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/clients/{{ client.id }}">Klient</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Hodnota celkem (CZK)</div><div class="fw-semibold">{{ '%.2f'|format(agg.total) }}</div></div></div>
+  <div class="col-md-4"><div class="stat-pill"><div class="text-muted-soft small">Význam</div>
+    <div class="fw-semibold {% if agg.significance=='problem' %}text-danger{% elif agg.significance=='attention' %}text-warning{% else %}text-success{% endif %}">{{ agg.label }}</div>
+  </div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card tilla-card h-100">
+      <div class="card-header">Úročené · celkem {{ '%.2f'|format(agg.bearing) }} CZK</div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm mb-0 tilla-table"><thead><tr><th>Datum</th><th>Popis</th><th>Původ</th><th>Kurz</th><th>CZK</th></tr></thead><tbody>
+          {% for r in agg.rows_interest %}<tr>
+            <td>{{ r.movement_date }}</td><td>{{ r.description }}</td><td>{{ r.original_amount }} {{ r.original_currency }}</td><td>{{ r.fx_rate_to_czk }}</td><td>{{ r.amount_czk }}</td>
+          </tr>{% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card tilla-card h-100">
+      <div class="card-header">Neúročené · celkem {{ '%.2f'|format(agg.nonbearing) }} CZK</div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm mb-0 tilla-table"><thead><tr><th>Datum</th><th>Popis</th><th>Původ</th><th>Kurz</th><th>CZK</th></tr></thead><tbody>
+          {% for r in agg.rows_noninterest %}<tr>
+            <td>{{ r.movement_date }}</td><td>{{ r.description }}</td><td>{{ r.original_amount }} {{ r.original_currency }}</td><td>{{ r.fx_rate_to_czk }}</td><td>{{ r.amount_czk }}</td>
+          </tr>{% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card tilla-card p-4 mb-5">
+  <h2 class="h6 fw-semibold">Ruční přidání pohybu</h2>
+  <form method="post" action="/clients/{{ client.id }}/setoffs/manual" class="row g-2 align-items-end">
+    <div class="col-md-2"><label class="small">Datum</label><input type="date" class="form-control form-control-sm" name="movement_date" required></div>
+    <div class="col-md-4"><label class="small">Popis</label><input class="form-control form-control-sm" name="description" required></div>
+    <div class="col-md-2"><label class="small">Částka</label><input type="number" step="0.01" class="form-control form-control-sm" name="original_amount" required></div>
+    <div class="col-md-1"><label class="small">Měna</label><input class="form-control form-control-sm" name="original_currency" value="CZK"></div>
+    <div class="col-md-2"><label class="small">Kurz → CZK</label><input type="number" step="0.000001" class="form-control form-control-sm" name="fx_rate_to_czk" value="1"></div>
+    <div class="col-md-2"><label class="small">Úročené</label>
+      <select class="form-select form-select-sm" name="interest_bearing"><option value="yes">Ano</option><option value="no">Ne</option></select>
+    </div>
+    <div class="col-md-2"><label class="small">Faktura ID (volitelně)</label><input type="number" class="form-control form-control-sm" name="invoice_id"></div>
+    <div class="col-12"><button class="btn btn-sm btn-tilla-primary mt-2">Přidat pohyb</button></div>
+  </form>
+</div>
+{% endblock %}

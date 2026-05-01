@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Po splatnosti pojištěné{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Pojištěné posplatné faktury</h1>
+<div class="table-responsive card tilla-card">
+  <table class="table table-sm mb-0 tilla-table"><thead><tr><th>VS</th><th>Klient</th><th>Odběratel</th><th>Splatnost</th><th>Částka</th></tr></thead><tbody>
+    {% for inv in invoices %}<tr>
+      <td><a href="/invoices/{{ inv.id }}">{{ inv.variable_symbol }}</a></td>
+      <td>{{ inv.client.short_name }}</td>
+      <td>{{ inv.debtor.name }}</td>
+      <td>{{ inv.due_date }}</td>
+      <td>{{ inv.amount }} {{ inv.currency }}</td>
+    </tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Platební dávky{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Platební dávky</h1>
+<div class="table-responsive card tilla-card">
+  <table class="table mb-0 tilla-table"><thead><tr><th>Reference</th><th>Datum</th><th>Popis</th><th>Počet plateb</th></tr></thead><tbody>
+    {% for b in batches %}<tr>
+      <td>{{ b.reference }}</td><td>{{ b.batch_date }}</td><td>{{ b.description }}</td><td>{{ b.payments|length }}</td>
+    </tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

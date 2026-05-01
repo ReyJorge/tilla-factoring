@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Úprava faktury {{ invoice.variable_symbol }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3 fw-semibold">Úprava faktury {{ invoice.variable_symbol }}</h1>
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-basic" type="button">Základní</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pay" type="button">Platby</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-files" type="button">Soubory</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tax" type="button">Daňové doklady</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mail" type="button">Emaily</button></li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active card tilla-card p-4" id="tab-basic">
+    <form method="post" action="/invoices/{{ invoice.id }}/edit">
+      <div class="row g-3">
+        <div class="col-md-3"><label class="form-label">VS</label><input class="form-control" name="variable_symbol" value="{{ invoice.variable_symbol }}" required></div>
+        <div class="col-md-3"><label class="form-label">Číslo FA</label><input class="form-control" name="invoice_number" value="{{ invoice.invoice_number or '' }}"></div>
+        <div class="col-md-3"><label class="form-label">Částka</label><input type="number" step="0.01" class="form-control" name="amount" value="{{ invoice.amount }}" required></div>
+        <div class="col-md-3"><label class="form-label">Měna</label><input class="form-control" name="currency" value="{{ invoice.currency }}" required></div>
+        <div class="col-md-4"><label class="form-label">Vystaveno</label><input type="date" class="form-control" name="issued_date" value="{{ invoice.issued_date }}" required></div>
+        <div class="col-md-4"><label class="form-label">Zadání</label><input type="date" class="form-control" name="submitted_date" value="{{ invoice.submitted_date }}" required></div>
+        <div class="col-md-4"><label class="form-label">Splatnost</label><input type="date" class="form-control" name="due_date" value="{{ invoice.due_date }}" required></div>
+        <div class="col-12"><label class="form-label">Poznámka</label><textarea class="form-control" name="note" rows="2">{{ invoice.note or '' }}</textarea></div>
+      </div>
+      <button class="btn btn-tilla-primary mt-3">Uložit — přepočet zálohy a poplatku</button>
+    </form>
+  </div>
+
+  <div class="tab-pane fade card tilla-card p-4" id="tab-pay">
+    <p class="text-muted-soft small">Seznam plateb viz také detail faktury.</p>
+    <a class="btn btn-sm btn-outline-secondary" href="/invoices/{{ invoice.id }}">Zpět na přehled</a>
+  </div>
+
+  <div class="tab-pane fade card tilla-card p-4" id="tab-files">
+    <ul class="mb-3">{% for f in invoice.files %}<li>{{ f.file_type }} — {{ f.original_filename }}</li>{% else %}<li class="text-muted">Žádné soubory</li>{% endfor %}</ul>
+    <form method="post" action="/invoices/{{ invoice.id }}/upload" enctype="multipart/form-data" class="row g-2 align-items-end">
+      <div class="col-md-3"><label class="small">Typ</label>
+        <select class="form-select form-select-sm" name="file_type">
+          <option value="cmr">CMR</option><option value="order">Objednávka</option><option value="issued_invoice">Vydaná faktura</option><option value="other">Ostatní</option>
+        </select>
+      </div>
+      <div class="col-md-6"><label class="small">Soubor</label><input type="file" class="form-control form-control-sm" name="file" required></div>
+      <div class="col-md-3"><button class="btn btn-sm btn-tilla-primary">Upload</button></div>
+    </form>
+  </div>
+
+  <div class="tab-pane fade card tilla-card p-4" id="tab-tax">
+    <div class="table-responsive mb-3">
+      <table class="table table-sm tilla-table"><thead><tr><th>Vystaveno</th><th>DUZP</th><th>Základ</th><th>Celkem</th></tr></thead><tbody>
+        {% for t in invoice.tax_documents %}<tr><td>{{ t.issued_date }}</td><td>{{ t.tax_supply_date }}</td><td>{{ t.base_amount }}</td><td>{{ t.total_amount }} {{ t.currency }}</td></tr>{% else %}<tr><td colspan="4" class="text-muted">Žádné doklady</td></tr>{% endfor %}
+      </tbody></table>
+    </div>
+    <form method="post" action="/invoices/{{ invoice.id }}/tax/add" class="row g-2">
+      <div class="col-md-3"><label class="small">Vystaveno</label><input type="date" class="form-control form-control-sm" name="issued_date" required></div>
+      <div class="col-md-3"><label class="small">DUZP</label><input type="date" class="form-control form-control-sm" name="tax_supply_date" required></div>
+      <div class="col-md-2"><label class="small">Základ</label><input type="number" step="0.01" class="form-control form-control-sm" name="base_amount" required></div>
+      <div class="col-md-2"><label class="small">Celkem</label><input type="number" step="0.01" class="form-control form-control-sm" name="total_amount" required></div>
+      <div class="col-md-2"><label class="small">Měna</label><input class="form-control form-control-sm" name="currency" value="{{ invoice.currency }}"></div>
+      <div class="col-12"><button class="btn btn-sm btn-tilla-accent mt-2">Přidat doklad</button></div>
+    </form>
+  </div>
+
+  <div class="tab-pane fade card tilla-card p-4" id="tab-mail">
+    <ul class="mb-3">{% for e in invoice.emails %}<li>{{ e.sent_at }} · {{ e.subject }} · {{ e.recipients }}</li>{% else %}<li class="text-muted">Žádné emaily</li>{% endfor %}</ul>
+    <form method="post" action="/invoices/{{ invoice.id }}/email/simulate" class="row g-2">
+      <div class="col-md-5"><label class="small">Adresát</label><input class="form-control form-control-sm" name="recipients" required></div>
+      <div class="col-md-5"><label class="small">Předmět</label><input class="form-control form-control-sm" name="subject" required></div>
+      <div class="col-md-2"><button class="btn btn-sm btn-tilla-primary mt-4">Zalogovat email</button></div>
+    </form>
+  </div>
+</div>
+
+<a href="/invoices/{{ invoice.id }}" class="btn btn-link mt-3">Zpět na fakturu</a>
+{% endblock %}

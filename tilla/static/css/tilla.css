@@ -1,0 +1,127 @@
+:root {
+  --tilla-navy: #0d1b2a;
+  --tilla-navy-2: #1f2d44;
+  --tilla-gold: #c8a96a;
+  --tilla-offwhite: #f5f2ee;
+  --tilla-grey: #6b7280;
+}
+
+body.tilla-body {
+  background: var(--tilla-offwhite);
+  color: #111827;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+}
+
+.tilla-navbar {
+  background: var(--tilla-navy);
+}
+
+.tilla-navbar .nav-link {
+  color: #e5e7eb !important;
+}
+
+.tilla-navbar .nav-link.active,
+.tilla-navbar .nav-link:hover {
+  color: var(--tilla-gold) !important;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--tilla-gold);
+  color: var(--tilla-navy);
+  font-weight: 800;
+  margin-right: 0.35rem;
+}
+
+.slogan {
+  color: var(--tilla-gold);
+  margin-left: 0.75rem;
+  font-weight: 500;
+}
+
+.card.tilla-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(13, 27, 42, 0.08);
+}
+
+.card.tilla-card .card-header {
+  background: var(--tilla-navy);
+  color: #fff;
+  border-radius: 12px 12px 0 0 !important;
+  font-size: 0.95rem;
+}
+
+.table.tilla-table thead {
+  background: var(--tilla-navy-2);
+  color: #fff;
+}
+
+.table.tilla-table {
+  font-size: 0.9rem;
+}
+
+.badge-status-ok {
+  background: rgba(22, 163, 74, 0.15);
+  color: #166534;
+}
+.badge-status-warn {
+  background: rgba(234, 88, 12, 0.15);
+  color: #c2410c;
+}
+.badge-status-danger {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+.badge-status-wait {
+  background: rgba(107, 114, 128, 0.2);
+  color: #374151;
+}
+.badge-status-financed {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.btn-tilla-primary {
+  background: var(--tilla-navy);
+  border-color: var(--tilla-navy);
+  color: #fff;
+}
+
+.btn-tilla-primary:hover {
+  background: var(--tilla-navy-2);
+  border-color: var(--tilla-navy-2);
+  color: #fff;
+}
+
+.btn-tilla-accent {
+  background: var(--tilla-gold);
+  border-color: var(--tilla-gold);
+  color: var(--tilla-navy);
+}
+
+.flash-stack .alert {
+  border-radius: 10px;
+}
+
+.stat-pill {
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid rgba(31, 45, 68, 0.08);
+}
+
+.text-muted-soft {
+  color: var(--tilla-grey) !important;
+}
+
+.footer-mini {
+  border-top: 1px solid rgba(31, 45, 68, 0.08);
+  color: var(--tilla-grey);
+  font-size: 0.85rem;
+}

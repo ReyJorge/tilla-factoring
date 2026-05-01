@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Bankovní výpisy{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Výpisy bankovních účtů</h1>
+<div class="table-responsive card tilla-card">
+  <table class="table mb-0 tilla-table"><thead><tr><th>Období</th><th>Účet</th><th>Měna</th><th>Otevírací</th><th>Závěrečný</th></tr></thead><tbody>
+    {% for s in statements %}<tr>
+      <td>{{ s.period_from }} — {{ s.period_to }}</td><td>{{ s.account_iban }}</td><td>{{ s.currency }}</td><td>{{ s.opening_balance }}</td><td>{{ s.closing_balance }}</td>
+    </tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

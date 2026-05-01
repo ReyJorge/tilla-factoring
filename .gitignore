@@ -1,0 +1,23 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.Python
+*.egg-info/
+.pytest_cache/
+
+# Lokální podklady / screenshoty (nepatří do deploy repozitáře)
+*.xlsx
+*.png
+
+# TILLA local venv & SQLite (Render používá Postgres)
+tilla/.venv/
+tilla/data/*.db
+
+# IDE
+.idea/
+.vscode/

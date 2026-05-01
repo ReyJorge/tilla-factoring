@@ -1,0 +1,27 @@
+# Render Blueprint — TILLA API
+# Nasazení: Render Dashboard → New → Blueprint → vyberte repo → použije se tento soubor.
+
+databases:
+  - name: tilla-db
+    databaseName: tilla
+    user: tilla
+    region: frankfurt
+
+services:
+  - type: web
+    name: tilla-web
+    runtime: docker
+    region: frankfurt
+    plan: free
+    dockerfilePath: ./tilla/Dockerfile
+    dockerContext: ./tilla
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tilla-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PYTHONUNBUFFERED
+        value: "1"

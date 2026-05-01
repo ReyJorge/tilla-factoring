@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Upravit klienta{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Úprava klienta — {{ client.name }}</h1>
+<form method="post" action="/clients/{{ client.id }}/edit" class="card tilla-card p-4 mb-4">
+  <div class="row g-3">
+    <div class="col-md-4"><label class="form-label">Číslo smlouvy</label><input class="form-control" name="contract_number" value="{{ client.contract_number }}" required></div>
+    <div class="col-md-4"><label class="form-label">IČ</label><input class="form-control" name="ic" value="{{ client.ic }}" required></div>
+    <div class="col-md-4"><label class="form-label">DIČ</label><input class="form-control" name="dic" value="{{ client.dic or '' }}"></div>
+    <div class="col-md-8"><label class="form-label">Název</label><input class="form-control" name="name" value="{{ client.name }}" required></div>
+    <div class="col-md-4"><label class="form-label">Krátký název</label><input class="form-control" name="short_name" value="{{ client.short_name }}" required></div>
+    <div class="col-md-4"><label class="form-label">Jazyk</label>
+      <select class="form-select" name="communication_language">
+        <option value="cs" {% if client.communication_language=='cs' %}selected{% endif %}>čeština</option>
+        <option value="en" {% if client.communication_language=='en' %}selected{% endif %}>English</option>
+      </select>
+    </div>
+    <div class="col-md-8"><label class="form-label">Email</label><input class="form-control" name="email" value="{{ client.email }}" required></div>
+    <div class="col-md-6"><label class="form-label">Účet číslo</label><input class="form-control" name="bank_account_number" value="{{ client.bank_account_number or '' }}"></div>
+    <div class="col-md-2"><label class="form-label">Kód banky</label><input class="form-control" name="bank_code" value="{{ client.bank_code or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">IBAN</label><input class="form-control" name="iban" value="{{ client.iban or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">SWIFT</label><input class="form-control" name="swift" value="{{ client.swift or '' }}"></div>
+    <div class="col-md-8"><label class="form-label">Oslovení</label><input class="form-control" name="salutation" value="{{ client.salutation or '' }}"></div>
+    <div class="col-md-4"><label class="form-label">Odpovědný pracovník</label>
+      <select class="form-select" name="responsible_user_id">
+        <option value="">—</option>
+        {% for u in users %}<option value="{{ u.id }}" {% if client.responsible_user_id==u.id %}selected{% endif %}>{{ u.full_name }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  <button class="btn btn-tilla-primary mt-3">Uložit základní údaje</button>
+</form>
+
+<h2 class="h5 fw-semibold">Nastavení factoringu</h2>
+<p class="text-muted-soft small">Prázdné pole = převzetí globální hodnoty. Jinak hodnota přepíše globální nastavení.</p>
+<form method="post" action="/clients/{{ client.id }}/settings/save" class="card tilla-card p-3 mb-4">
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Parametr</th><th>Globálně</th><th>Hodnota klienta</th></tr></thead>
+      <tbody>
+        {% for row in settings_table %}
+        <tr>
+          <td>{{ row.label }}</td>
+          <td>{{ row.global_value }}</td>
+          <td style="width:30%"><input class="form-control form-control-sm" name="{{ row.field_name }}" placeholder="inherit" value="{{ row.client_value or '' }}"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <button class="btn btn-tilla-accent btn-sm mt-2">Uložit nastavení</button>
+</form>
+
+<h2 class="h5 fw-semibold">Kontakty</h2>
+<ul class="mb-3">
+  {% for c in client.contacts %}<li>{{ c.name }} — {{ c.email }} {{ c.phone }}</li>{% endfor %}
+</ul>
+<form method="post" action="/clients/{{ client.id }}/contacts/add" class="row g-2 align-items-end mb-5">
+  <div class="col-md-3"><label class="form-label small mb-0">Jméno</label><input class="form-control form-control-sm" name="name" required></div>
+  <div class="col-md-3"><label class="form-label small mb-0">Email</label><input class="form-control form-control-sm" name="contact_email"></div>
+  <div class="col-md-2"><label class="form-label small mb-0">Telefon</label><input class="form-control form-control-sm" name="phone"></div>
+  <div class="col-md-2"><label class="form-label small mb-0">Role</label><input class="form-control form-control-sm" name="role_label"></div>
+  <div class="col-md-2"><button class="btn btn-sm btn-outline-secondary w-100">+ Přidat kontakt</button></div>
+</form>
+
+<a href="/clients/{{ client.id }}" class="btn btn-link">Zpět na detail</a>
+{% endblock %}

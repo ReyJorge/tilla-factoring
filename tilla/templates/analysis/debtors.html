@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Výkon odběratelů{% endblock %}
+{% block content %}
+<h1 class="h3 mb-2 fw-semibold">Analýza — výkon odběratelů</h1>
+<p class="text-muted-soft small">Období: posledních {{ period_days }} dní · Průměrná durace aktiv (vážená, otevřené položky): <strong>{{ avg_asset_duration }} dní</strong></p>
+
+<div class="card tilla-card p-4 mb-4">
+  <h2 class="h6 fw-semibold mb-3">Top objemy za období</h2>
+  <canvas id="debtorVolumeChart" height="120"></canvas>
+</div>
+
+<div class="table-responsive card tilla-card">
+  <table class="table table-sm mb-0 tilla-table align-middle">
+    <thead>
+      <tr>
+        <th>Název</th><th>IČ</th><th>Risk</th><th>Pojištění</th><th>Země</th>
+        <th>Fa za obd.</th><th>Hodnota</th><th>Otevřené ks</th><th>Otevřená hodnota</th>
+        <th>Poměr %</th><th>Vážený Δ spl.</th><th>ETA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><a href="/debtors/{{ r.debtor.id }}">{{ r.debtor.name }}</a></td>
+        <td>{{ r.debtor.ic }}</td>
+        <td><span class="badge {% if r.risk=='BLOCK' %}badge-status-danger{% elif r.risk=='WARNING' %}badge-status-warn{% elif r.risk=='OK' %}badge-status-ok{% else %}badge-status-wait{% endif %}">{{ r.risk }}</span></td>
+        <td>{% if r.insured %}<span class="badge badge-status-ok">{{ '%.0f'|format(r.insured) }}</span>{% else %}—{% endif %}</td>
+        <td>{{ r.debtor.country_code }}</td>
+        <td>{{ r.hist_cnt }}</td>
+        <td>{{ '%.0f'|format(r.hist_val) }}</td>
+        <td>{{ r.open_cnt }}</td>
+        <td>{{ '%.0f'|format(r.open_val) }}</td>
+        <td>{{ r.ratio_val }} %</td>
+        <td>{{ r.avg_open_days }}</td>
+        <td>{{ r.eta }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const labels = {{ chart_labels|tojson }};
+  const values = {{ chart_values|tojson }};
+  const ctx = document.getElementById('debtorVolumeChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Objem ( měna naturální )',
+          data: values,
+          backgroundColor: 'rgba(200, 169, 106, 0.75)',
+          borderColor: '#0d1b2a',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { maxRotation: 45, minRotation: 25 } },
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h1 class="h3 fw-semibold mb-0">{{ client.name }}</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-tilla-primary btn-sm" href="/clients/{{ client.id }}/invoices">Faktury klienta</a>
+    <a class="btn btn-outline-secondary btn-sm" href="/clients/{{ client.id }}/setoffs">Settlement / zápočty</a>
+    <a class="btn btn-tilla-accent btn-sm" href="/clients/{{ client.id }}/edit">Upravit</a>
+  </div>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Číslo smlouvy</div><div class="fw-semibold">{{ client.contract_number }}</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">IČ</div><div class="fw-semibold">{{ client.ic }}</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Email</div><div class="fw-semibold">{{ client.email }}</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Odpovědný</div><div class="fw-semibold">{{ client.responsible_user.full_name if client.responsible_user else '—' }}</div></div></div>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-2"><div class="stat-pill"><div class="text-muted-soft small">Počet faktur</div><div class="fw-semibold">{{ summary.invoice_count }}</div></div></div>
+  <div class="col-md-2"><div class="stat-pill"><div class="text-muted-soft small">Suma CZK</div><div class="fw-semibold">{{ '%.2f'|format(summary.sums.get('CZK', 0)) }}</div></div></div>
+  <div class="col-md-2"><div class="stat-pill"><div class="text-muted-soft small">Suma EUR</div><div class="fw-semibold">{{ '%.2f'|format(summary.sums.get('EUR', 0)) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Zálohy CZK / EUR</div><div class="fw-semibold">{{ '%.2f'|format(summary.advances.get('CZK', 0)) }} / {{ '%.2f'|format(summary.advances.get('EUR', 0)) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Otevřená expozice (≈CZK)</div><div class="fw-semibold">{{ '%.2f'|format(summary.open_exposure.czk_equiv) }}</div></div></div>
+</div>
+<p class="text-muted-soft small mb-4">Zápočty celkem: <strong>{{ '%.2f'|format(summary.offsets_czk) }} CZK</strong></p>
+
+<h2 class="h5 fw-semibold mb-2">Nastavení — náhled</h2>
+<div class="table-responsive card tilla-card mb-4">
+  <table class="table mb-0 table-sm tilla-table">
+    <thead><tr><th>Parametr</th><th>Globálně</th><th>Klient</th></tr></thead>
+    <tbody>
+      {% for row in settings_table %}
+      <tr>
+        <td>{{ row.label }} <span class="text-muted-soft small">({{ row.key }})</span></td>
+        <td>{{ row.global_value }}</td>
+        <td>{% if row.client_value %}<span class="badge badge-status-warn">{{ row.client_value }}</span>{% else %}<span class="text-muted-soft">převzato</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2 class="h5 fw-semibold mb-2">Kontakty</h2>
+<ul class="mb-0">
+  {% for c in client.contacts %}
+  <li>{{ c.name }} — {{ c.email or '—' }} {{ c.phone or '' }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

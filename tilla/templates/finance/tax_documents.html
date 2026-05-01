@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Daňové doklady{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Daňové doklady</h1>
+<div class="row g-3 mb-3">
+  {% for cur in ['CZK','EUR'] %}
+  <div class="col-md-4"><div class="stat-pill"><div class="small text-muted-soft">{{ cur }} bez DPH</div><div class="fw-semibold">{{ '%.2f'|format(totals[cur].base) }}</div></div></div>
+  <div class="col-md-4"><div class="stat-pill"><div class="small text-muted-soft">{{ cur }} s DPH</div><div class="fw-semibold">{{ '%.2f'|format(totals[cur].total) }}</div></div></div>
+  {% endfor %}
+</div>
+<div class="table-responsive card tilla-card">
+  <table class="table table-sm mb-0 tilla-table"><thead><tr><th>VS</th><th>FA</th><th>Klient</th><th>Vystaveno</th><th>DUZP</th><th>Základ</th><th>Celkem</th></tr></thead><tbody>
+    {% for r in rows %}<tr>
+      <td>{{ r.variable_symbol }}</td><td><a href="/invoices/{{ r.invoice_id }}">{{ r.invoice_id }}</a></td><td>{{ r.invoice.client.short_name }}</td>
+      <td>{{ r.issued_date }}</td><td>{{ r.tax_supply_date }}</td><td>{{ r.base_amount }} {{ r.currency }}</td><td>{{ r.total_amount }} {{ r.currency }}</td>
+    </tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

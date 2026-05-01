@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ debtor.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h1 class="h3 fw-semibold mb-0">{{ debtor.name }}</h1>
+  <div class="d-flex gap-2">
+    <form method="post" action="/debtors/{{ debtor.id }}/screen"><button class="btn btn-sm btn-tilla-primary">Spustit lustraci</button></form>
+    <a class="btn btn-sm btn-outline-secondary" href="/debtors">Zpět</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">IČ</div><div>{{ debtor.ic }}</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Expozice (≈CZK)</div><div>{{ '%.2f'|format(metrics.exposure.czk_equiv) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Poměr otevřené / období</div><div>{{ metrics.ratio_val }} % hodnotou</div></div></div>
+  <div class="col-md-3"><div class="stat-pill"><div class="text-muted-soft small">Vážený průměr Δ splatnosti (otevřené)</div><div>{{ metrics.avg_open_days }} dní</div></div></div>
+</div>
+
+<div class="card tilla-card p-4 mb-4">
+  <h2 class="h6 fw-semibold mb-3">Upravit</h2>
+  <form method="post" action="/debtors/{{ debtor.id }}/edit" class="row g-2 align-items-end">
+    <div class="col-md-5"><label class="small">Název</label><input class="form-control form-control-sm" name="name" value="{{ debtor.name }}" required></div>
+    <div class="col-md-3"><label class="small">IČ</label><input class="form-control form-control-sm" name="ic" value="{{ debtor.ic }}" required></div>
+    <div class="col-md-3"><label class="small">Email</label><input class="form-control form-control-sm" name="email" value="{{ debtor.email or '' }}"></div>
+    <div class="col-md-1"><label class="small">Země</label><input class="form-control form-control-sm" name="country_code" value="{{ debtor.country_code }}"></div>
+    <div class="col-md-3"><label class="small">Limit pojištění</label><input type="number" step="0.01" class="form-control form-control-sm" name="insurance_amount" value="{{ debtor.insurance_amount or '' }}"></div>
+    <div class="col-md-2"><button class="btn btn-sm btn-tilla-primary">Uložit</button></div>
+  </form>
+</div>
+
+<h2 class="h5 fw-semibold">Otevřené / nedávné faktury</h2>
+<div class="table-responsive card tilla-card mb-5">
+  <table class="table table-sm mb-0 tilla-table"><thead><tr><th>VS</th><th>Stav</th><th>Splatnost</th><th>Částka</th><th>Klient</th></tr></thead><tbody>
+    {% for inv in invoices %}<tr>
+      <td><a href="/invoices/{{ inv.id }}">{{ inv.variable_symbol }}</a></td>
+      <td>{{ inv.status }}</td>
+      <td>{{ inv.due_date }}</td>
+      <td>{{ inv.amount }} {{ inv.currency }}</td>
+      <td><a href="/clients/{{ inv.client_id }}">{{ inv.client.short_name }}</a></td>
+    </tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

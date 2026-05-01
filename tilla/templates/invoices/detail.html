@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Faktura {{ invoice.variable_symbol }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h1 class="h3 fw-semibold mb-1">Faktura {{ invoice.variable_symbol }}</h1>
+    <p class="text-muted-soft small mb-0"><a href="/clients/{{ invoice.client_id }}">{{ invoice.client.name }}</a> · <a href="/debtors/{{ invoice.debtor_id }}">{{ invoice.debtor.name }}</a></p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-sm btn-tilla-primary" href="/invoices/{{ invoice.id }}/edit">Detail / dokumenty</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/clients/{{ invoice.client_id }}/invoices">Seznam faktur</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card tilla-card p-4">
+      <div class="row g-3">
+        <div class="col-md-4"><div class="text-muted-soft small">Stav</div><div class="fs-5">{{ status_labels.get(invoice.status, invoice.status) }}</div></div>
+        <div class="col-md-4"><div class="text-muted-soft small">Částka</div><div class="fw-semibold">{{ invoice.amount }} {{ invoice.currency }}</div></div>
+        <div class="col-md-4"><div class="text-muted-soft small">Záloha</div><div>{{ invoice.advance_amount }}</div></div>
+        <div class="col-md-4"><div class="text-muted-soft small">Poplatek %</div><div>{{ invoice.fee_percent }}</div></div>
+        <div class="col-md-4"><div class="text-muted-soft small">Splatnost</div><div>{{ invoice.due_date }} <span class="badge badge-status-wait">Δ {{ days }} dní</span></div></div>
+        <div class="col-md-4"><div class="text-muted-soft small">Inkaso</div><div>{{ invoice.collected_amount }}</div></div>
+        <div class="col-12"><div class="text-muted-soft small">Poznámka</div><div>{{ invoice.note or '—' }}</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card tilla-card p-3 mb-3">
+      <h2 class="h6 fw-semibold">Workflow</h2>
+      <div class="d-grid gap-2">
+        <form method="post" action="/invoices/{{ invoice.id }}/workflow"><input type="hidden" name="step" value="to_check"><button class="btn btn-sm btn-outline-secondary" {% if invoice.status!=InvoiceStatus.NEW.value %}disabled{% endif %}>→ Čeká na kontrolu</button></form>
+        <form method="post" action="/invoices/{{ invoice.id }}/workflow"><input type="hidden" name="step" value="to_debtor_pending"><button class="btn btn-sm btn-outline-secondary" {% if invoice.status!=InvoiceStatus.PENDING_CHECK.value %}disabled{% endif %}>→ Čeká na potvrzení odběratele</button></form>
+        <form method="post" action="/invoices/{{ invoice.id }}/workflow"><input type="hidden" name="step" value="debtor_confirmed"><button class="btn btn-sm btn-outline-secondary" {% if invoice.status!=InvoiceStatus.PENDING_DEBTOR_CONFIRM.value %}disabled{% endif %}>→ Potvrzená odběratelem</button></form>
+        <form method="post" action="/invoices/{{ invoice.id }}/purchase"><button class="btn btn-sm btn-tilla-primary" {% if invoice.status!=InvoiceStatus.DEBTOR_CONFIRMED.value %}disabled{% endif %}>Odkoupit</button></form>
+        <form method="post" action="/invoices/{{ invoice.id }}/advance"><button class="btn btn-sm btn-outline-secondary" {% if invoice.status!=InvoiceStatus.PURCHASED.value %}disabled{% endif %}>Záloha profinancována</button></form>
+        <form method="post" action="/invoices/{{ invoice.id }}/await-collection"><button class="btn btn-sm btn-outline-secondary" {% if invoice.status not in [InvoiceStatus.PURCHASED.value, InvoiceStatus.ADVANCE_FINANCED.value] %}disabled{% endif %}>Čeká na inkaso</button></form>
+        <form method="post" action="/invoices/{{ invoice.id }}/finalize"><button class="btn btn-sm btn-tilla-accent">Finalizovat (plně uhrazeno)</button></form>
+        <form method="post" action="/invoices/{{ invoice.id }}/assign"><input type="text" class="form-control form-control-sm mb-1" name="assign_note" placeholder="Poznámka ke postoupení"><button class="btn btn-sm btn-outline-secondary">Postoupit / záznam</button></form>
+        <form method="post" action="/invoices/{{ invoice.id }}/workflow"><input type="hidden" name="step" value="problem"><button class="btn btn-sm btn-outline-danger">Označit problém</button></form>
+        <form method="post" action="/invoices/{{ invoice.id }}/workflow"><input type="hidden" name="step" value="recover_collection"><button class="btn btn-sm btn-outline-secondary">Obnovit → inkaso</button></form>
+      </div>
+    </div>
+    <div class="card tilla-card p-3">
+      <h2 class="h6 fw-semibold">Upomínky</h2>
+      <p class="small text-muted-soft mb-2">Úroveň: {{ invoice.reminder_level }} / 5</p>
+      <form method="post" action="/invoices/{{ invoice.id }}/reminder"><button class="btn btn-sm btn-tilla-primary">Simulovat odeslání upomínky</button></form>
+    </div>
+  </div>
+</div>
+
+<div class="card tilla-card">
+  <div class="card-header">Platby spárované s fakturou</div>
+  <div class="card-body p-0 table-responsive">
+    <table class="table table-sm mb-0 tilla-table"><thead><tr><th>Datum</th><th>Částka</th><th>Měna</th><th>Plátce</th></tr></thead><tbody>
+      {% for p in payments %}<tr><td>{{ p.payment_date }}</td><td>{{ p.amount }}</td><td>{{ p.currency }}</td><td>{{ p.payer_name }}</td></tr>
+      {% else %}<tr><td colspan="4" class="text-muted p-3">Žádné párování.</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>
+{% endblock %}

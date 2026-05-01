@@ -1,0 +1,22 @@
+# Volitelné: po vytvoření Deploy Hooku na Renderu ho uložte jako GitHub secret `RENDER_DEPLOY_HOOK_URL`.
+# Spuštění: Actions → Redeploy Render → Run workflow.
+
+name: Redeploy Render
+
+on:
+  workflow_dispatch:
+
+jobs:
+  hook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "Secret RENDER_DEPLOY_HOOK_URL není nastaven — přeskočeno."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK"
+          echo "Deploy hook invoked."

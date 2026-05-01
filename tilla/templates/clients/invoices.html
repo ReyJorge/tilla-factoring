@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Faktury — {{ client.short_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h1 class="h3 fw-semibold mb-1">Faktury klienta {{ client.name }}</h1>
+    <p class="text-muted-soft small mb-0">
+      Vyfiltrováno: {{ invoices|length }} · Souhrn CZK {{ '%.2f'|format(summary.sums.get('CZK', 0)) }} · EUR {{ '%.2f'|format(summary.sums.get('EUR', 0)) }}
+      · Zálohy CZK {{ '%.2f'|format(summary.advances.get('CZK', 0)) }} · EUR {{ '%.2f'|format(summary.advances.get('EUR', 0)) }}
+    </p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-sm btn-tilla-primary" href="/clients/{{ client.id }}/invoices/export">Export CSV</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/clients/{{ client.id }}">Klient</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/clients/{{ client.id }}/setoffs">Settlement</a>
+  </div>
+</div>
+
+<div class="btn-group btn-group-sm mb-3 flex-wrap">
+  <a class="btn btn-outline-secondary {% if quick=='' %}active{% endif %}" href="/clients/{{ client.id }}/invoices">Vše</a>
+  <a class="btn btn-outline-secondary {% if quick=='overdue' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=overdue">Po splatnosti</a>
+  <a class="btn btn-outline-secondary {% if quick=='before_due' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=before_due">Před splatností</a>
+  <a class="btn btn-outline-secondary {% if quick=='purchased' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=purchased">Financované</a>
+  <a class="btn btn-outline-secondary {% if quick=='pending_confirm' %}active{% endif %}" href="/clients/{{ client.id }}/invoices?quick=pending_confirm">Čeká na potvrzení</a>
+</div>
+
+<div class="card tilla-card p-3 mb-4">
+  <h2 class="h6 fw-semibold">Zadat novou fakturu</h2>
+  <form class="row g-2 align-items-end" method="post" action="/clients/{{ client.id }}/invoices/create">
+    <div class="col-lg-3"><label class="small text-muted-soft">Odběratel</label>
+      <select class="form-select form-select-sm" name="debtor_id" required>
+        {% for d in debtors %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-lg-2"><label class="small text-muted-soft">VS</label><input class="form-control form-control-sm" name="variable_symbol" required></div>
+    <div class="col-lg-2"><label class="small text-muted-soft">Částka</label><input class="form-control form-control-sm" type="number" step="0.01" name="amount" required></div>
+    <div class="col-lg-1"><label class="small text-muted-soft">Měna</label>
+      <select class="form-select form-select-sm" name="currency"><option>CZK</option><option>EUR</option></select>
+    </div>
+    <div class="col-lg-1"><label class="small text-muted-soft">Vystaveno</label><input class="form-control form-control-sm" type="date" name="issued_date" required></div>
+    <div class="col-lg-1"><label class="small text-muted-soft">Zadání</label><input class="form-control form-control-sm" type="date" name="submitted_date" required></div>
+    <div class="col-lg-1"><label class="small text-muted-soft">Splatnost</label><input class="form-control form-control-sm" type="date" name="due_date" required></div>
+    <div class="col-lg-3"><label class="small text-muted-soft">Číslo FA</label><input class="form-control form-control-sm" name="invoice_number"></div>
+    <div class="col-lg-6"><label class="small text-muted-soft">Poznámka</label><input class="form-control form-control-sm" name="note"></div>
+    <div class="col-12"><button class="btn btn-sm btn-tilla-accent mt-2">+ Založit fakturu</button></div>
+  </form>
+</div>
+
+<div class="table-responsive card tilla-card">
+  <table class="table table-sm mb-0 tilla-table align-middle">
+    <thead>
+      <tr>
+        <th>ID</th><th>VS</th><th>Odběratel</th><th>Stav</th><th>Vystaveno</th><th>Splatnost</th><th>Dny</th><th>Částka</th><th>K %</th><th>Záloha</th><th>Inkasováno</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inv in invoices %}
+      {% set dd = (inv.due_date - today).days %}
+      <tr>
+        <td><a href="/invoices/{{ inv.id }}">{{ inv.id }}</a></td>
+        <td>{{ inv.variable_symbol }}</td>
+        <td><a href="/debtors/{{ inv.debtor_id }}">{{ inv.debtor.name[:36] }}</a></td>
+        <td><span class="badge {% if inv.status=='fully_settled' %}badge-status-ok{% elif inv.status in ['problem','overdue'] %}badge-status-danger{% elif inv.status in ['purchased','advance_financed','awaiting_collection'] %}badge-status-financed{% elif inv.status=='pending_debtor_confirm' %}badge-status-warn{% else %}badge-status-wait{% endif %}">{{ status_labels.get(inv.status, inv.status) }}</span></td>
+        <td>{{ inv.issued_date }}</td>
+        <td>{{ inv.due_date }}</td>
+        <td>{{ dd }}</td>
+        <td>{{ inv.amount }} {{ inv.currency }}</td>
+        <td>{{ inv.fee_percent }}</td>
+        <td>{{ inv.advance_amount }}</td>
+        <td>{{ inv.collected_amount }}</td>
+        <td class="text-nowrap">
+          <a class="btn btn-sm btn-outline-secondary py-0" href="/invoices/{{ inv.id }}/edit">Edit</a>
+          <form class="d-inline" method="post" action="/invoices/{{ inv.id }}/delete" onsubmit="return confirm('Smazat fakturu?');"><button class="btn btn-sm btn-outline-danger py-0">×</button></form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

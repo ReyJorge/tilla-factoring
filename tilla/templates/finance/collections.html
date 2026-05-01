@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Evidence inkasa{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Evidence inkasa (spárované platby)</h1>
+<div class="table-responsive card tilla-card">
+  <table class="table table-sm mb-0 tilla-table"><thead><tr><th>Datum</th><th>Částka</th><th>Měna</th><th>Plátce</th><th>Faktura</th></tr></thead><tbody>
+    {% for p in payments %}<tr>
+      <td>{{ p.payment_date }}</td><td>{{ p.amount }}</td><td>{{ p.currency }}</td><td>{{ p.payer_name }}</td>
+      <td><a href="/invoices/{{ p.matched_invoice_id }}">#{{ p.matched_invoice_id }}</a></td>
+    </tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

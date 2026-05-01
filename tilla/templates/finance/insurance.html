@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Pojištění{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4 fw-semibold">Report pojištění</h1>
+<div class="table-responsive card tilla-card">
+  <table class="table mb-0 tilla-table"><thead><tr><th>Odběratel</th><th>Limit</th><th>Platnost od</th><th>Do</th><th>Pojistitel</th></tr></thead><tbody>
+    {% for r in rows %}<tr>
+      <td><a href="/debtors/{{ r.debtor_id }}">{{ r.debtor.name }}</a></td><td>{{ r.insured_limit }}</td><td>{{ r.valid_from }}</td><td>{{ r.valid_to or '—' }}</td><td>{{ r.insurer_name }}</td>
+    </tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}
