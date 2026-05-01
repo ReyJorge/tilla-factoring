@@ -1,3 +1,4 @@
+import logging
 import os
 
 from fastapi import FastAPI
@@ -5,9 +6,13 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.database import BASE_DIR, init_db
-from app.seed import seed_demo_if_empty
+import app.models  # noqa: F401 — tabulky na Base.metadata před drop_all/create_all
+
+from app.database import BASE_DIR, Base, engine, init_db
+from app.seed import seed, seed_demo_if_empty
 from app.routers import analysis, clients, dashboard, debtors, finance, home, invoices, settings
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="TILLA", description="Anchored in Trust — Invoice financing MVP")
 
@@ -26,6 +31,14 @@ app.add_middleware(
 @app.on_event("startup")
 def _startup():
     init_db()
+    if os.getenv("TILLA_FORCE_REBUILD", "").strip() == "1":
+        logger.info("FORCE REBUILD ENABLED")
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+        logger.info("DATABASE RECREATED")
+        seed()
+        logger.info("SEED COMPLETE")
+        return
     seed_demo_if_empty()
 
 

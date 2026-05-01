@@ -42,6 +42,12 @@ Logy v stdout:
 
 Chcete-li auto-seed vypnout (např. prázdná produkční DB bez dema), nastavte env **`TILLA_SKIP_AUTO_SEED=1`**.
 
+### Oprava starého schématu Postgres (`TILLA_FORCE_REBUILD`)
+
+Pokud Render hlásí chybějící sloupce (staré schéma bez migrací), nastavte **`TILLA_FORCE_REBUILD=1`**. Při startu proběhne `drop_all` + `create_all` + plný **`seed()`** bez shellu. Logy: **`FORCE REBUILD ENABLED`** → **`DATABASE RECREATED`** → **`SEED COMPLETE`**.
+
+**Po jednom úspěšném deployi** změňte hodnotu na **`0`** nebo proměnnou smažte — jinak se DB při každém startu znovu smaže. Blueprint (`render.yaml`) má zatím `1` pro jednorázovou opravu; pak upravte v Dashboard / YAML.
+
 ## Spuštění
 
 Po instalaci a seedu stačí jeden příkaz pro lokální vývoj:
