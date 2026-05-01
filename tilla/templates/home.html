@@ -1,204 +1,95 @@
 {% extends "base.html" %}
-{% block title %}TILLA — financování faktur v ERP{% endblock %}
+{% block title %}TILLA{% endblock %}
+{% block main_extra_class %}main-home-corp{% endblock %}
+{% block floating_cta %}{% endblock %}
 {% block content %}
-<section class="hero-commercial rounded-4 overflow-hidden mb-5">
-  <div class="hero-commercial-inner px-4 px-lg-5 py-5 py-xl-commercial">
-    <div class="row align-items-center g-5">
-      <div class="col-lg-7">
-        <p class="hero-eyebrow mb-3">Embedded reverse factoring</p>
-        <h1 class="hero-headline mb-4">Schvalujte a financujte faktury přímo v ERP</h1>
-        <p class="hero-sublead mb-4 mb-lg-5">Rychlejší cashflow pro dodavatele. Bez papírování pro anchory.</p>
-        <div class="d-flex flex-wrap gap-3">
-          <a class="btn btn-tilla-accent btn-lg px-4" href="mailto:demo@tilla.cz?subject=Demo%20TILLA">Požádat o demo</a>
-          <a class="btn btn-hero-outline btn-lg px-4" href="mailto:partner@tilla.cz?subject=Partnerstv%C3%AD%20s%20ERP">Partnerství s ERP</a>
-          <a class="btn btn-link text-white text-decoration-underline link-offset-3 btn-lg px-2 align-self-center" href="/dashboard">Vstoupit do aplikace →</a>
+<div class="corp-front">
+  <header class="corp-hero">
+    <div class="corp-hero-inner">
+      <img src="/static/brand/tilla-logo.svg" alt="TILLA" class="corp-hero-logo mb-5" width="200" height="48">
+      <p class="corp-tagline font-display mb-3">Anchored in Trust</p>
+      <h1 class="corp-hero-lead font-display mb-4">Structured working capital solutions.</h1>
+      <p class="corp-hero-sub mx-auto mb-5">Embedded finance infrastructure for serious businesses.</p>
+      <div class="d-flex flex-wrap justify-content-center gap-3">
+        <a class="btn btn-inst-primary btn-lg px-5" href="/dashboard">Enter Platform</a>
+        <a class="btn btn-inst-outline btn-lg px-5" href="mailto:demo@tilla.cz?subject=TILLA%20%7C%20Partnership%20enquiry">Partnership Enquiry</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="corp-section" aria-labelledby="cap-heading">
+    <div class="corp-section-inner">
+      <h2 id="cap-heading" class="corp-section-title font-display">Capabilities</h2>
+      <div class="row g-4 g-xl-5 corp-cap-grid">
+        <div class="col-md-6 col-xl-4">
+          <article class="corp-cap-card"><h3 class="corp-cap-title">Receivables Finance</h3><p class="corp-cap-text mb-0">Disciplined purchase of supplier receivables against verified anchor acceptance.</p></article>
         </div>
-      </div>
-      <div class="col-lg-5">
-        <div class="hero-glass-panel p-4 p-lg-5 rounded-4">
-          <div class="d-flex align-items-center gap-3 mb-4">
-            <span class="brand-mark brand-mark-lg">T</span>
-            <div>
-              <div class="fw-semibold text-white">TILLA inside ERP</div>
-              <div class="small text-white-50">Stejný zážitek jako samostatný dashboard — vnořitelný do vašeho systému.</div>
-            </div>
-          </div>
-          <ul class="list-unstyled mb-0 small text-white-50 gap-3 d-flex flex-column">
-            <li class="d-flex gap-2"><span class="text-tilla-gold">✓</span> Jedna pravda o plnění a inkasu</li>
-            <li class="d-flex gap-2"><span class="text-tilla-gold">✓</span> Transparentní zálohy a settlement</li>
-            <li class="d-flex gap-2"><span class="text-tilla-gold">✓</span> Risk &amp; pojištění v jedné vrstvě</li>
-          </ul>
+        <div class="col-md-6 col-xl-4">
+          <article class="corp-cap-card"><h3 class="corp-cap-title">ERP Embedded Flows</h3><p class="corp-cap-text mb-0">Native operational context — no duplicate ledgers or shadow processes.</p></article>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="trust-strip mb-5 py-4 py-lg-5" aria-labelledby="trust-heading">
-  <div class="text-center mb-4">
-    <h2 id="trust-heading" class="section-title mb-2">Proč dodavatelé TILLU berou vážně</h2>
-    <p class="text-muted-soft small mb-0 mx-auto trust-strip-lead">Minimum bariér na vaší straně — maximum přehledu pro anchor.</p>
-  </div>
-  <div class="row g-3 g-lg-4 justify-content-center trust-points">
-    <div class="col-6 col-md-3"><div class="trust-point"><span class="trust-check">✓</span><span>Bez zástav</span></div></div>
-    <div class="col-6 col-md-3"><div class="trust-point"><span class="trust-check">✓</span><span>Bez změny banky</span></div></div>
-    <div class="col-6 col-md-3"><div class="trust-point"><span class="trust-check">✓</span><span>Bez složitých smluv</span></div></div>
-    <div class="col-6 col-md-3"><div class="trust-point"><span class="trust-check">✓</span><span>Bez zatížení odběratele</span></div></div>
-  </div>
-</section>
-
-<section class="mb-5 pb-2">
-  <div class="text-center mb-4">
-    <h2 class="section-title mb-2">Tok hodnoty</h2>
-    <p class="text-muted-soft mb-0 small mx-auto section-lead">Od schválení faktury po vyrovnání — bez přepínání mezi systémy.</p>
-  </div>
-  <div class="workflow-track px-2 px-lg-0">
-    <div class="workflow-step">
-      <span class="workflow-dot"></span>
-      <span class="workflow-label">Faktura schválena</span>
-    </div>
-    <span class="workflow-arrow" aria-hidden="true"></span>
-    <div class="workflow-step">
-      <span class="workflow-dot"></span>
-      <span class="workflow-label">Anchor potvrdí</span>
-    </div>
-    <span class="workflow-arrow" aria-hidden="true"></span>
-    <div class="workflow-step workflow-step-accent">
-      <span class="workflow-dot"></span>
-      <span class="workflow-label">Záloha 80&nbsp;%</span>
-    </div>
-    <span class="workflow-arrow" aria-hidden="true"></span>
-    <div class="workflow-step">
-      <span class="workflow-dot"></span>
-      <span class="workflow-label">Kupující zaplatí</span>
-    </div>
-    <span class="workflow-arrow" aria-hidden="true"></span>
-    <div class="workflow-step">
-      <span class="workflow-dot"></span>
-      <span class="workflow-label">Settlement</span>
-    </div>
-  </div>
-</section>
-
-<section class="erp-strip mb-5 py-3 px-3 px-lg-4 rounded-4" aria-label="Kompatibilita s ERP">
-  <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-between gap-3 gap-lg-4">
-    <span class="erp-strip-label small text-muted-soft text-uppercase fw-semibold mb-0 mb-lg-0 me-lg-3">Kompatibilita</span>
-    <div class="d-flex flex-wrap justify-content-center gap-2 erp-strip-badges">
-      <span class="erp-badge">Byznys</span>
-      <span class="erp-badge">Pohoda</span>
-      <span class="erp-badge">Helios</span>
-      <span class="erp-badge">ABRA</span>
-      <span class="erp-badge erp-badge-accent">API Ready</span>
-    </div>
-  </div>
-</section>
-
-<section class="mb-5">
-  <div class="row g-4 align-items-stretch">
-    <div class="col-md-6 col-xl-3">
-      <div class="card tilla-card h-100 border-0 p-4 commercial-card">
-        <span class="step-num mb-3">1</span>
-        <h3 class="h6 fw-semibold mb-2">Nahrání do ERP</h3>
-        <p class="small text-muted-soft mb-0">Faktura a dokumenty zůstávají v procesu dodavatele; TILLA přebírá stav schválení.</p>
-      </div>
-    </div>
-    <div class="col-md-6 col-xl-3">
-      <div class="card tilla-card h-100 border-0 p-4 commercial-card">
-        <span class="step-num mb-3">2</span>
-        <h3 class="h6 fw-semibold mb-2">Potvrzení anchor</h3>
-        <p class="small text-muted-soft mb-0">Odběratel potvrdí plnění — snížení rizika před výplatou zálohy.</p>
-      </div>
-    </div>
-    <div class="col-md-6 col-xl-3">
-      <div class="card tilla-card h-100 border-0 p-4 commercial-card commercial-card-highlight">
-        <span class="step-num mb-3">3</span>
-        <h3 class="h6 fw-semibold mb-2">Financování</h3>
-        <p class="small text-muted-soft mb-0">Záloha podle smluvního poměru (např. 80&nbsp;%) a poplatkových pásem.</p>
-      </div>
-    </div>
-    <div class="col-md-6 col-xl-3">
-      <div class="card tilla-card h-100 border-0 p-4 commercial-card">
-        <span class="step-num mb-3">4</span>
-        <h3 class="h6 fw-semibold mb-2">Inkaso &amp; zápočty</h3>
-        <p class="small text-muted-soft mb-0">Platba od kupce, párování a settlement na clearing účtu.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="mb-5 roi-section" aria-labelledby="roi-heading">
-  <div class="card tilla-card border-0 roi-calculator-card overflow-hidden">
-    <div class="row g-0">
-      <div class="col-lg-5 roi-calculator-aside p-4 p-lg-5">
-        <p class="roi-eyebrow mb-2">Rychlý odhad</p>
-        <h2 id="roi-heading" class="section-title text-white mb-3">Kolik obratu uvolníte?</h2>
-        <p class="small text-white-50 mb-0">Orientační výpočet uvolněného provozního kapitálu při reverse factoringu — zadejte měsíční objem faktur a splatnosti.</p>
-      </div>
-      <div class="col-lg-7 p-4 p-lg-5 bg-white">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label small fw-semibold text-muted-soft" for="roi-volume">Měsíční objem faktur (Kč)</label>
-            <input type="number" class="form-control form-control-lg roi-input" id="roi-volume" value="8500000" min="0" step="100000">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold text-muted-soft" for="roi-due">Prům. splatnost (dny)</label>
-            <input type="number" class="form-control form-control-lg roi-input" id="roi-due" value="35" min="1" max="120" step="1">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold text-muted-soft" for="roi-advance">Záloha (%)</label>
-            <input type="number" class="form-control form-control-lg roi-input" id="roi-advance" value="80" min="1" max="100" step="1">
-          </div>
+        <div class="col-md-6 col-xl-4">
+          <article class="corp-cap-card"><h3 class="corp-cap-title">Anchor Confirmation</h3><p class="corp-cap-text mb-0">Formal debtor acknowledgement prior to funding release.</p></article>
         </div>
-        <div class="roi-result-wrap mt-4 pt-4 border-top border-light-subtle">
-          <div class="small text-muted-soft text-uppercase fw-semibold mb-1">Odhad uvolnitelného obratu</div>
-          <div class="roi-result-value" id="roi-result">—</div>
-          <p class="small text-muted-soft mb-0 mt-2 roi-disclaimer">Model: průměrná „zatržená“ pohledávka ≈ měsíční objem × (splatnost / 30). Uvolnění ≈ tato částka × záloha %. Nezávazný ukazatel.</p>
+        <div class="col-md-6 col-xl-4">
+          <article class="corp-cap-card"><h3 class="corp-cap-title">Settlement Engine</h3><p class="corp-cap-text mb-0">Controlled clearing, netting, and reconciliation across currencies.</p></article>
+        </div>
+        <div class="col-md-6 col-xl-4">
+          <article class="corp-cap-card"><h3 class="corp-cap-title">Risk Governance</h3><p class="corp-cap-text mb-0">Counterparty protocols, concentration limits, and audit-ready controls.</p></article>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="mb-5 row g-5 align-items-start">
-  <div class="col-lg-6">
-    <h2 class="section-title mb-4">Pro koho je TILLA</h2>
-    <ul class="list-unstyled mb-0 commercial-list">
-      <li><strong>Dodavatelé</strong> — předčasný přístup k hotovosti bez paralelní administrativy.</li>
-      <li><strong>Anchors</strong> — přehled potvrzení a předvídatelné řízení vztahu k dodavateli.</li>
-      <li><strong>ERP partneři</strong> — prémiová funkce přímo v produktu, jedna integrační vrstva.</li>
-    </ul>
-  </div>
-  <div class="col-lg-6" id="partner">
-    <div class="card tilla-card border-0 p-4 p-lg-5 commercial-card-deep h-100">
-      <h2 class="section-title text-white mb-3">Partnerství s ERP</h2>
-      <p class="text-white-50 small mb-4 mb-lg-5">White-label modul nebo iframe — uživatel nepozná hranici mezi ERP a financováním. Ozvěte se a připravíme pilot na vašem prostředí.</p>
-      <div class="d-flex flex-wrap gap-2">
-        <a class="btn btn-tilla-accent" href="mailto:partner@tilla.cz?subject=Partnerstv%C3%AD%20s%20ERP">Domluvit hovor</a>
-        <a class="btn btn-hero-outline border-white text-white" href="/dashboard">Technické demo</a>
+  <section class="corp-section corp-section-alt" aria-labelledby="built-heading">
+    <div class="corp-section-inner">
+      <h2 id="built-heading" class="corp-section-title font-display">Built For</h2>
+      <div class="row g-0 corp-built-grid">
+        <div class="col-md-6 col-xl-3"><div class="corp-built-cell"><span class="corp-built-label">ERP Platforms</span></div></div>
+        <div class="col-md-6 col-xl-3"><div class="corp-built-cell"><span class="corp-built-label">Corporate Suppliers</span></div></div>
+        <div class="col-md-6 col-xl-3"><div class="corp-built-cell"><span class="corp-built-label">Funding Partners</span></div></div>
+        <div class="col-md-6 col-xl-3"><div class="corp-built-cell"><span class="corp-built-label">Institutional Capital</span></div></div>
       </div>
     </div>
-  </div>
-</section>
-{% endblock %}
-{% block scripts %}
-<script>
-(function () {
-  function fmtCZK(n) {
-    var x = Math.round(Math.max(0, n));
-    return x.toLocaleString('cs-CZ').replace(/\u00a0/g, ' ') + ' Kč';
-  }
-  function recalc() {
-    var vol = parseFloat(document.getElementById('roi-volume').value) || 0;
-    var due = parseFloat(document.getElementById('roi-due').value) || 0;
-    var adv = parseFloat(document.getElementById('roi-advance').value) || 0;
-    var avgStock = vol * (due / 30);
-    var released = avgStock * (adv / 100);
-    document.getElementById('roi-result').textContent = fmtCZK(released);
-  }
-  ['roi-volume', 'roi-due', 'roi-advance'].forEach(function (id) {
-    document.getElementById(id).addEventListener('input', recalc);
-  });
-  recalc();
-})();
-</script>
+  </section>
+
+  <section class="corp-section" aria-labelledby="metrics-heading">
+    <div class="corp-section-inner">
+      <h2 id="metrics-heading" class="corp-section-title font-display">Live Metrics</h2>
+      <p class="corp-metrics-note mb-4 mb-xl-5">Demonstration environment · indicative figures</p>
+      <div class="row g-4 corp-metrics-row">
+        <div class="col-6 col-lg-3">
+          <div class="corp-metric">
+            <div class="corp-metric-label">CZK financed</div>
+            <div class="corp-metric-value font-display">{{ metrics.czk_financed|cs_money }}</div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="corp-metric">
+            <div class="corp-metric-label">Invoices processed</div>
+            <div class="corp-metric-value font-display">{{ metrics.invoices_processed }}</div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="corp-metric">
+            <div class="corp-metric-label">Settlement success rate</div>
+            <div class="corp-metric-value font-display">{{ metrics.settlement_success_rate|cs_pct(1) }}%</div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="corp-metric">
+            <div class="corp-metric-label">Active anchors</div>
+            <div class="corp-metric-value font-display">{{ metrics.active_anchors }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="corp-footer-strip">
+    <div class="corp-footer-inner">
+      <div class="corp-footer-location font-display">Prague · Czech Republic</div>
+      <div class="corp-footer-tagline">Institutional Working Capital Infrastructure</div>
+    </div>
+  </footer>
+</div>
 {% endblock %}
