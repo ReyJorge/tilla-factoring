@@ -9,7 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 import app.models  # noqa: F401 — tabulky na Base.metadata před drop_all/create_all
 
-from app.database import BASE_DIR, Base, engine, get_db, init_db
+from app.database import BASE_DIR, Base, engine, get_db, init_db, reset_demo_schema
 from app.models import (
     BankStatement,
     Client,
@@ -25,6 +25,15 @@ from app.seed import seed, seed_demo_if_empty
 from app.routers import analysis, clients, dashboard, debtors, finance, home, invoices, settings
 
 logger = logging.getLogger(__name__)
+
+
+def _demo_rebuild_allowed() -> bool:
+    """Refuse destructive rebuild in production unless explicitly opted in."""
+    env = os.getenv("ENVIRONMENT", "").strip().lower()
+    if env == "production":
+        return os.getenv("TILLA_ALLOW_DEMO_REBUILD", "").strip() == "1"
+    return True
+
 
 app = FastAPI(title="TILLA", description="Anchored in Trust — Invoice financing MVP")
 
@@ -42,15 +51,24 @@ app.add_middleware(
 
 @app.on_event("startup")
 def _startup():
-    init_db()
-    if os.getenv("TILLA_FORCE_REBUILD", "").strip() == "1":
+    force_rebuild = os.getenv("TILLA_FORCE_REBUILD", "").strip() == "1"
+    if force_rebuild:
         logger.info("FORCE REBUILD ENABLED")
-        Base.metadata.drop_all(bind=engine)
+        if not _demo_rebuild_allowed():
+            raise RuntimeError(
+                "TILLA_FORCE_REBUILD refused: ENVIRONMENT=production requires "
+                "TILLA_ALLOW_DEMO_REBUILD=1 for destructive schema reset."
+            )
+        import app.models  # noqa: F401 — ensure Base.metadata lists every table before create_all
+
+        reset_demo_schema(engine)
         Base.metadata.create_all(bind=engine)
         logger.info("DATABASE RECREATED")
-        seed()
+        seed(skip_schema_reset=True)
         logger.info("SEED COMPLETE")
         return
+
+    init_db()
     seed_demo_if_empty()
 
 

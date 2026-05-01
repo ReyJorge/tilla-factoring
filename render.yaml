@@ -25,6 +25,13 @@ services:
         generateValue: true
       - key: PYTHONUNBUFFERED
         value: "1"
-      # Jednorázová oprava starého schématu Postgres (např. chybějící sloupce). Po úspěšném deployi nastavte na "0" nebo smažte řádek.
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: ENVIRONMENT
+        value: production
+      # Povolit destruktivní reset schématu jen u dema (viz TILLA_FORCE_REBUILD).
+      - key: TILLA_ALLOW_DEMO_REBUILD
+        value: "1"
+      # Jednorázová oprava starého schématu Postgres: DROP SCHEMA public CASCADE + seed. Po úspěšném prvním deployi nastavte na "0".
       - key: TILLA_FORCE_REBUILD
         value: "1"

@@ -44,9 +44,16 @@ Chcete-li auto-seed vypnout (např. prázdná produkční DB bez dema), nastavte
 
 ### Oprava starého schématu Postgres (`TILLA_FORCE_REBUILD`)
 
-Pokud Render hlásí chybějící sloupce (staré schéma bez migrací), nastavte **`TILLA_FORCE_REBUILD=1`**. Při startu proběhne `drop_all` + `create_all` + plný **`seed()`** bez shellu. Logy: **`FORCE REBUILD ENABLED`** → **`DATABASE RECREATED`** → **`SEED COMPLETE`**.
+Pokud Render hlásí nekonzistentní schéma (např. `UndefinedTable` při `drop_all`), nastavte **`TILLA_FORCE_REBUILD=1`**.
 
-**Po jednom úspěšném deployi** změňte hodnotu na **`0`** nebo proměnnou smažte — jinak se DB při každém startu znovu smaže. Blueprint (`render.yaml`) má zatím `1` pro jednorázovou opravu; pak upravte v Dashboard / YAML.
+- **PostgreSQL:** při startu se provede **`DROP SCHEMA public CASCADE`**, **`CREATE SCHEMA public`**, **`GRANT ALL ON SCHEMA public TO public`**, pak **`create_all`** a **`seed()`** (bez druhého `drop_all`). Logy: **`FORCE REBUILD ENABLED`** → **`POSTGRES SCHEMA RESET`** → **`DATABASE RECREATED`** → **`SEED COMPLETE`**.
+- **SQLite:** stejně jako dříve `metadata.drop_all` + `create_all` + seed.
+
+**Bezpečnost:** pokud je **`ENVIRONMENT=production`**, rebuild projde jen s **`TILLA_ALLOW_DEMO_REBUILD=1`** (jinak startup skončí chybou).
+
+**Concurrency:** na Renderu nastavte **`WEB_CONCURRENCY=1`** (v blueprintu i v Docker CMD přes tuto proměnnou), aby se při rebuildu nepřihlásily dva worker procesy naráz.
+
+**Po jednom úspěšném deployi** nastavte **`TILLA_FORCE_REBUILD=0`** nebo proměnnou smažte — jinak se databáze při každém startu znovu vymaže. `render.yaml` má `1` pro první opravu schématu; pak hodnotu v Dashboard / YAML změňte.
 
 ## Spuštění
 

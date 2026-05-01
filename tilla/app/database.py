@@ -1,8 +1,11 @@
+import logging
 import os
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -51,3 +54,23 @@ def get_db():
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+
+
+def reset_demo_schema(engine_obj):
+    """Wipe DB for demo rebuild: Postgres uses full public schema reset (robust vs inconsistent FK drift).
+
+    SQLite uses metadata.drop_all. Import ``app.models`` so every table is registered on ``Base.metadata``.
+    """
+    import app.models  # noqa: F401
+
+    dialect = engine_obj.dialect.name
+    if dialect == "postgresql":
+        with engine_obj.begin() as conn:
+            conn.execute(text("DROP SCHEMA public CASCADE"))
+            conn.execute(text("CREATE SCHEMA public"))
+            conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
+        logger.info("POSTGRES SCHEMA RESET")
+    elif dialect == "sqlite":
+        Base.metadata.drop_all(bind=engine_obj)
+    else:
+        Base.metadata.drop_all(bind=engine_obj)

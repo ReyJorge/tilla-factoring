@@ -18,4 +18,5 @@ COPY . .
 ENV PORT=8000
 EXPOSE 8000
 
-CMD ["sh", "-c", "exec gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120"]
+# WEB_CONCURRENCY=1 recommended on Render when TILLA_FORCE_REBUILD=1 (single worker avoids parallel startup rebuild).
+CMD ["sh", "-c", "exec gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --timeout 120"]

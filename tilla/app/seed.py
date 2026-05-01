@@ -78,9 +78,10 @@ def seed_demo_if_empty() -> None:
     logger.info("Seed completed")
 
 
-def seed() -> None:
-    Base.metadata.drop_all(bind=engine)
-    init_db()
+def seed(skip_schema_reset: bool = False) -> None:
+    if not skip_schema_reset:
+        Base.metadata.drop_all(bind=engine)
+        init_db()
     db = SessionLocal()
     rnd = random.Random(42)
     today = date.today()
