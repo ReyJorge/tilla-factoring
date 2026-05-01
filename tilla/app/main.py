@@ -2,7 +2,7 @@ import logging
 import os
 
 from fastapi import Depends, FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
@@ -91,6 +91,22 @@ def debug_db_counts(db: Session = Depends(get_db)):
         "risk_checks": db.query(RiskCheck).count(),
         "bank_statements": db.query(BankStatement).count(),
     }
+
+
+@app.get("/debug/analysis-check")
+def debug_analysis_check(db: Session = Depends(get_db)):
+    """Smoke JSON for debtor analysis aggregation — never raises."""
+    try:
+        payload = analysis.build_debtors_analysis_payload(db)
+        return {
+            "ok": True,
+            "debtors": payload["debtor_count"],
+            "rows": payload["rows_count"],
+            "chart_points": payload["chart_points"],
+        }
+    except Exception as exc:
+        logger.exception("debug/analysis-check failed")
+        return JSONResponse(status_code=200, content={"ok": False, "error": str(exc)})
 
 
 @app.get("/")

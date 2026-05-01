@@ -5,9 +5,10 @@
 
 <h1 class="h3 mb-2 fw-semibold">Management přehled — odběratelé</h1>
 <p class="text-muted-soft small mb-4">
-  Období: posledních {{ period_days }} dní · Vážené dny <strong>do splatnosti</strong> (otevřené, před splatností): <strong>{{ avg_to_maturity_portfolio }} dní</strong>
-  {% if avg_overdue_portfolio > 0 %}
-  · Průměrné zpoždění po splatnosti (vážené): <strong>{{ avg_overdue_portfolio }} dní</strong>
+  Období: posledních {{ period_days }} dní · Vážené dny <strong>do splatnosti</strong> (otevřené, před splatností):
+  {% if avg_to_maturity_portfolio is not none %}<strong>{{ avg_to_maturity_portfolio|string|replace('.', ',') }} dní</strong>{% else %}<strong>—</strong>{% endif %}
+  {% if avg_overdue_portfolio is not none and avg_overdue_portfolio > 0 %}
+  · Průměrné zpoždění po splatnosti (vážené): <strong>{{ avg_overdue_portfolio|string|replace('.', ',') }} dní</strong>
   {% endif %}
 </p>
 
@@ -51,26 +52,28 @@
       {% for r in rows %}
       <tr>
         <td>{{ loop.index }}</td>
-        <td><a href="/debtors/{{ r.debtor.id }}">{{ r.debtor.name }}</a></td>
-        <td>{{ r.debtor.ic }}</td>
+        <td><a href="/debtors/{{ r.debtor.id }}">{{ r.debtor.name or '—' }}</a></td>
+        <td>{% if r.debtor.ic is not none %}{{ r.debtor.ic }}{% else %}—{% endif %}</td>
         <td>
           {% if r.risk=='BLOCK' %}<span class="badge badge-status-danger">{{ r.risk }}</span>
           {% elif r.risk=='EXPIRED' %}<span class="badge badge-status-danger">{{ r.risk }}</span>
           {% elif r.risk=='WARNING' %}<span class="badge badge-status-warn">{{ r.risk }}</span>
           {% elif r.risk_expired %}<span class="badge badge-status-danger">EXPIRED</span>
           {% elif r.risk=='OK' %}<span class="badge badge-status-ok">{{ r.risk }}</span>
+          {% elif r.risk=='UNKNOWN' %}<span class="badge badge-status-wait">{{ r.risk }}</span>
+          {% elif not r.risk or r.risk=='—' %}<span class="badge badge-status-wait">UNKNOWN</span>
           {% else %}<span class="badge badge-status-wait">{{ r.risk }}</span>{% endif %}
         </td>
-        <td class="text-end">{% if r.insured %}<span class="badge badge-status-ok">{{ r.insured|int|string }}</span>{% else %}—{% endif %}</td>
-        <td>{{ r.debtor.country_code }}</td>
-        <td class="text-end">{{ r.hist_cnt }}</td>
+        <td class="text-end">{% if r.insured is not none and r.insured > 0 %}<span class="badge badge-status-ok">{{ r.insured|cs_int }}</span>{% else %}—{% endif %}</td>
+        <td>{% if r.debtor.country_code %}{{ r.debtor.country_code }}{% else %}—{% endif %}</td>
+        <td class="text-end">{{ r.hist_cnt if r.hist_cnt is not none else 0 }}</td>
         <td class="text-end">{{ r.hist_val|cs_int }}</td>
-        <td class="text-end">{{ r.open_cnt }}</td>
+        <td class="text-end">{{ r.open_cnt if r.open_cnt is not none else 0 }}</td>
         <td class="text-end">{{ r.open_val|cs_int }}</td>
         <td class="text-end">{{ r.ratio_val|cs_pct(1) }} %{% if r.ratio_anomaly %} <span class="badge badge-status-warn small">anomálie</span>{% endif %}</td>
-        <td class="text-end">{% if r.avg_days_to_maturity > 0 %}{{ r.avg_days_to_maturity|string|replace('.', ',') }}{% else %}—{% endif %}</td>
-        <td class="text-end">{% if r.avg_overdue_days_open > 0 %}{{ r.avg_overdue_days_open|string|replace('.', ',') }}{% else %}—{% endif %}</td>
-        <td>{{ r.eta|cs_date }}</td>
+        <td class="text-end">{% if r.avg_days_to_maturity is not none %}{{ r.avg_days_to_maturity|string|replace('.', ',') }}{% else %}—{% endif %}</td>
+        <td class="text-end">{% if r.avg_overdue_days_open is not none %}{{ r.avg_overdue_days_open|string|replace('.', ',') }}{% else %}—{% endif %}</td>
+        <td>{% if r.eta %}{{ r.eta|cs_date }}{% else %}—{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
