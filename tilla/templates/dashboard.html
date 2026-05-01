@@ -3,8 +3,64 @@
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0"><li class="breadcrumb-item active">Dashboard</li></ol></nav>
 
-<h1 class="h3 mb-4 fw-semibold">Portfolio přehled</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1 fw-semibold">Portfolio přehled</h1>
+    <p class="text-muted-soft small mb-0">Executive přehled a provozní tabulky — ukázková data.</p>
+  </div>
+</div>
 
+<div class="activity-ticker mb-4" role="region" aria-label="Poslední aktivity">
+  {% for item in kpis.activity_feed %}
+  <div class="activity-ticker-item activity-{{ item.kind }}">
+    <span class="activity-dot"></span>
+    <span>{{ item.text }}</span>
+  </div>
+  {% endfor %}
+</div>
+
+<section class="mb-4">
+  <h2 class="exec-section-label mb-3">Řídicí přehled</h2>
+  <div class="row row-cols-2 row-cols-lg-3 row-cols-xxl-5 g-3">
+    <div class="col">
+      <div class="kpi-chip kpi-chip-executive">
+        <div class="kpi-label">K financování dnes</div>
+        <div class="kpi-value text-end">{{ kpis.exec_available_finance_czk|cs_money }}</div>
+        <div class="kpi-sub text-end text-muted-soft small">Odhad zálohy (fronta před odkupem)</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="kpi-chip kpi-chip-executive">
+        <div class="kpi-label">Čeká na anchor</div>
+        <div class="kpi-value text-end">{{ kpis.exec_await_anchor_cnt }}</div>
+        <div class="kpi-sub text-end text-muted-soft small">{{ kpis.exec_await_anchor_czk|cs_money }} · VS celkem</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="kpi-chip kpi-chip-executive">
+        <div class="kpi-label">Aktivní financovaná expozice</div>
+        <div class="kpi-value text-end">{{ kpis.exec_financed_exposure_czk|cs_money }}</div>
+        <div class="kpi-sub text-end text-muted-soft small">Po odkupu, otevřená jistina</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="kpi-chip kpi-chip-executive">
+        <div class="kpi-label">Prům. dnů „urychlení“</div>
+        <div class="kpi-value text-end">{{ kpis.exec_avg_days_accelerated|string|replace('.', ',') }} <span class="kpi-unit">d</span></div>
+        <div class="kpi-sub text-end text-muted-soft small">Do splatnosti od financování</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="kpi-chip kpi-chip-executive">
+        <div class="kpi-label">Měsíční odhad výnosů</div>
+        <div class="kpi-value text-end">{{ kpis.exec_monthly_revenue_est_czk|cs_money }}</div>
+        <div class="kpi-sub text-end text-muted-soft small">Poplatky nad knihou (demo model)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<h2 class="exec-section-label mb-3">Provozní ukazatele</h2>
 <div class="row g-3 mb-4">
   <div class="col-6 col-lg-4 col-xl-2">
     <div class="kpi-chip">

@@ -204,6 +204,127 @@ def weighted_avg_overdue_days(db: Session) -> float:
     return round(wsum / wtot, 1) if wtot else 0.0
 
 
+def _open_principal(inv: Invoice) -> float:
+    return max(0.0, float(inv.amount) - float(inv.collected_amount or 0))
+
+
+def _amount_czk(inv: Invoice, amount: float, fx: float) -> float:
+    if inv.currency == "CZK":
+        return amount
+    return amount * fx
+
+
+_FINANCED_STATUSES = frozenset(
+    {
+        InvoiceStatus.PURCHASED.value,
+        InvoiceStatus.ADVANCE_FINANCED.value,
+        InvoiceStatus.AWAITING_COLLECTION.value,
+        InvoiceStatus.PARTIALLY_PAID.value,
+        InvoiceStatus.OVERDUE.value,
+    }
+)
+
+_AVAILABLE_PREFINANCE_STATUSES = frozenset(
+    {
+        InvoiceStatus.NEW.value,
+        InvoiceStatus.PENDING_CHECK.value,
+        InvoiceStatus.DEBTOR_CONFIRMED.value,
+    }
+)
+
+
+def available_to_finance_today_czk(db: Session) -> float:
+    """Odhad zálohy k uvolnění dnes — otevřená jistina × podíl zálohy u faktur ve vnitřní frontě před odkupem."""
+    fx = settings_service.global_float(db, "kurz.EUR", settings_service.DEFAULT_KURZ_EUR)
+    tot = 0.0
+    for inv in db.query(Invoice).filter(Invoice.status.in_(_AVAILABLE_PREFINANCE_STATUSES)).all():
+        open_amt = _open_principal(inv)
+        if open_amt <= 0:
+            continue
+        face = float(inv.amount)
+        adv = float(inv.advance_amount or 0)
+        if face <= 0:
+            continue
+        eligible = open_amt * (adv / face)
+        tot += _amount_czk(inv, eligible, fx)
+    return round(tot, 2)
+
+
+def awaiting_anchor_confirmation_stats(db: Session) -> tuple[int, float]:
+    """Čeká na potvrzení anchor (odběratele)."""
+    fx = settings_service.global_float(db, "kurz.EUR", settings_service.DEFAULT_KURZ_EUR)
+    rows = (
+        db.query(Invoice)
+        .filter(Invoice.status == InvoiceStatus.PENDING_DEBTOR_CONFIRM.value)
+        .all()
+    )
+    cnt = len(rows)
+    czk = 0.0
+    for inv in rows:
+        o = _open_principal(inv)
+        if o > 0:
+            czk += _amount_czk(inv, o, fx)
+    return cnt, round(czk, 2)
+
+
+def active_financed_exposure_czk(db: Session) -> float:
+    """Otevřená financovaná expozice (po odkupu / záloze, před úplným vyrovnáním)."""
+    fx = settings_service.global_float(db, "kurz.EUR", settings_service.DEFAULT_KURZ_EUR)
+    tot = 0.0
+    for inv in db.query(Invoice).filter(Invoice.status.in_(_FINANCED_STATUSES)).all():
+        o = _open_principal(inv)
+        if o > 0:
+            tot += _amount_czk(inv, o, fx)
+    return round(tot, 2)
+
+
+def weighted_avg_days_accelerated(db: Session) -> float:
+    """Vážený počet dnů od financování do splatnosti — proxy „urychlení“ horizonu závazku."""
+    fx = settings_service.global_float(db, "kurz.EUR", settings_service.DEFAULT_KURZ_EUR)
+    wsum = 0.0
+    wtot = 0.0
+    for inv in db.query(Invoice).filter(Invoice.status.in_(_FINANCED_STATUSES)).all():
+        o = _open_principal(inv)
+        if o <= 0:
+            continue
+        fund = inv.purchased_date or inv.submitted_date
+        if fund >= inv.due_date:
+            continue
+        days = max(0, (inv.due_date - fund).days)
+        w = _amount_czk(inv, o, fx)
+        wsum += days * w
+        wtot += w
+    return round(wsum / wtot, 1) if wtot else 0.0
+
+
+def monthly_revenue_estimate_czk(db: Session) -> float:
+    """Jednoduchý měsíční odhad výnosů z poplatků (částka × fee %) nad otevřenou financovanou knihou."""
+    fx = settings_service.global_float(db, "kurz.EUR", settings_service.DEFAULT_KURZ_EUR)
+    tot = 0.0
+    for inv in db.query(Invoice).filter(Invoice.status.in_(_FINANCED_STATUSES)).all():
+        o = _open_principal(inv)
+        if o <= 0:
+            continue
+        fee_pct = float(inv.fee_percent or 0) / 100.0
+        tot += _amount_czk(inv, o, fx) * fee_pct
+    return round(tot, 2)
+
+
+def dashboard_activity_feed(overdue_count: int) -> list[dict]:
+    """Ukázkové notifikace + živý počet po splatnosti (čeština)."""
+    if overdue_count == 1:
+        overdue_txt = "1 faktura po splatnosti."
+    elif overdue_count in (2, 3, 4):
+        overdue_txt = f"{overdue_count} faktury po splatnosti."
+    else:
+        overdue_txt = f"{overdue_count} faktur po splatnosti."
+    return [
+        {"kind": "success", "text": "Anchor ABC potvrdil fakturu VS 240019."},
+        {"kind": "money", "text": "Na účet dodavatele odesláno 540 000 Kč."},
+        {"kind": "warn", "text": overdue_txt},
+    ]
+
+
 def risk_ok_rate(db: Session) -> float:
     ttl = settings_service.global_int(db, "odberatel.riskTTL", settings_service.DEFAULT_ODBERATEL_RISK_TTL)
     debtors = db.query(Debtor).all()
@@ -228,10 +349,12 @@ def risk_ok_rate(db: Session) -> float:
 def dashboard_kpis(db: Session) -> dict:
     today = date.today()
     unmatched_n, unmatched_czk = unmatched_payments_stats(db)
+    await_cnt, await_czk = awaiting_anchor_confirmation_stats(db)
+    overdue_ct = overdue_invoices_count(db)
     return {
         "open_exposure_czk": round(portfolio_open_exposure_czk_equiv(db), 2),
         "active_invoices": active_invoices_count(db),
-        "overdue_count": overdue_invoices_count(db),
+        "overdue_count": overdue_ct,
         "unmatched_count": unmatched_n,
         "unmatched_czk_equiv": round(unmatched_czk, 2),
         # Průměrná durace aktiv = dny do splatnosti (otevřené, ještě nesplatné); overdue samostatně níže v šabloně.
@@ -239,4 +362,12 @@ def dashboard_kpis(db: Session) -> dict:
         "avg_overdue_days": weighted_avg_overdue_days(db),
         "risk_ok_rate": risk_ok_rate(db),
         "today": today,
+        # Executive overview (v4)
+        "exec_available_finance_czk": available_to_finance_today_czk(db),
+        "exec_await_anchor_cnt": await_cnt,
+        "exec_await_anchor_czk": await_czk,
+        "exec_financed_exposure_czk": active_financed_exposure_czk(db),
+        "exec_avg_days_accelerated": weighted_avg_days_accelerated(db),
+        "exec_monthly_revenue_est_czk": monthly_revenue_estimate_czk(db),
+        "activity_feed": dashboard_activity_feed(overdue_ct),
     }

@@ -1,9 +1,13 @@
 :root {
-  --tilla-navy: #0d1b2a;
-  --tilla-navy-2: #1f2d44;
-  --tilla-gold: #c8a96a;
-  --tilla-offwhite: #f5f2ee;
-  --tilla-grey: #6b7280;
+  --tilla-navy: #0a1628;
+  --tilla-navy-2: #152238;
+  --tilla-navy-soft: #1e3554;
+  --tilla-gold: #c9ae72;
+  --tilla-gold-soft: rgba(201, 174, 114, 0.22);
+  --tilla-offwhite: #f7f5f2;
+  --tilla-grey: #64748b;
+  --tilla-shadow: 0 4px 22px rgba(10, 22, 40, 0.06);
+  --tilla-shadow-soft: 0 2px 12px rgba(10, 22, 40, 0.05);
 }
 
 body.tilla-body {
@@ -13,7 +17,9 @@ body.tilla-body {
 }
 
 .tilla-navbar {
-  background: var(--tilla-navy);
+  background: linear-gradient(180deg, var(--tilla-navy) 0%, #0d1930 100%);
+  box-shadow: var(--tilla-shadow-soft);
+  border-bottom: 1px solid rgba(201, 174, 114, 0.12);
 }
 
 .tilla-navbar .nav-link {
@@ -46,8 +52,13 @@ body.tilla-body {
 
 .card.tilla-card {
   border: none;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(13, 27, 42, 0.08);
+  border-radius: 14px;
+  box-shadow: var(--tilla-shadow);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card.tilla-card:hover {
+  box-shadow: 0 8px 28px rgba(10, 22, 40, 0.09);
 }
 
 .card.tilla-card .card-header {
@@ -145,11 +156,31 @@ body.tilla-body {
 
 .kpi-chip {
   border-radius: 14px;
-  padding: 1rem 1.15rem;
+  padding: 1.1rem 1.2rem;
   background: #fff;
-  border: 1px solid rgba(31, 45, 68, 0.07);
-  box-shadow: 0 6px 18px rgba(13, 27, 42, 0.06);
+  border: 1px solid rgba(21, 34, 56, 0.06);
+  box-shadow: var(--tilla-shadow-soft);
   height: 100%;
+}
+
+.kpi-chip-executive {
+  background: linear-gradient(145deg, #ffffff 0%, #faf8f5 100%);
+  border: 1px solid var(--tilla-gold-soft);
+  box-shadow: 0 6px 20px rgba(10, 22, 40, 0.07);
+}
+
+.kpi-chip-executive .kpi-value {
+  color: var(--tilla-navy);
+  font-size: 1.25rem;
+}
+
+.exec-section-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  color: var(--tilla-grey);
+  margin-bottom: 0;
 }
 
 .kpi-chip-warn {
@@ -204,4 +235,256 @@ body.tilla-body {
   background: var(--tilla-gold);
   color: var(--tilla-navy);
   font-weight: 800;
+}
+
+/* —— TILLA v4 commercial polish —— */
+
+main.container-fluid {
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.text-tilla-gold {
+  color: var(--tilla-gold) !important;
+}
+
+.brand-mark-lg {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 1.25rem;
+}
+
+.hero-commercial {
+  background: linear-gradient(125deg, var(--tilla-navy) 0%, #0f2138 42%, var(--tilla-navy-2) 100%);
+  box-shadow: var(--tilla-shadow);
+  border: 1px solid rgba(201, 174, 114, 0.15);
+}
+
+.hero-commercial-inner {
+  position: relative;
+}
+
+@media (min-width: 1200px) {
+  .py-xl-commercial {
+    padding-top: 3.75rem !important;
+    padding-bottom: 3.75rem !important;
+  }
+}
+
+.hero-eyebrow {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--tilla-gold);
+  font-weight: 600;
+}
+
+.hero-headline {
+  font-size: clamp(1.85rem, 3.8vw, 2.65rem);
+  font-weight: 700;
+  line-height: 1.18;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.hero-sublead {
+  font-size: 1.125rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 36rem;
+}
+
+.hero-glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(201, 174, 114, 0.25);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.btn-hero-outline {
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  color: #fff !important;
+  background: transparent;
+}
+
+.btn-hero-outline:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: var(--tilla-gold) !important;
+  color: #fff !important;
+}
+
+.section-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--tilla-navy);
+  letter-spacing: -0.02em;
+}
+
+.section-lead {
+  max-width: 32rem;
+}
+
+.workflow-track {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 0.5rem;
+  padding: 1.75rem 1.25rem;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: var(--tilla-shadow-soft);
+  border: 1px solid rgba(21, 34, 56, 0.06);
+}
+
+.workflow-step {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  min-width: 5.5rem;
+}
+
+.workflow-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--tilla-navy-soft);
+  border: 2px solid var(--tilla-gold);
+  box-shadow: 0 0 0 4px var(--tilla-gold-soft);
+}
+
+.workflow-step-accent .workflow-dot {
+  background: var(--tilla-gold);
+  border-color: var(--tilla-navy);
+}
+
+.workflow-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tilla-navy);
+  line-height: 1.25;
+}
+
+.workflow-arrow {
+  width: 1.25rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--tilla-gold-soft), var(--tilla-gold));
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+@media (max-width: 767.98px) {
+  .workflow-arrow {
+    display: none;
+  }
+  .workflow-track {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .workflow-step {
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: left;
+    min-width: 0;
+  }
+}
+
+.commercial-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.commercial-card:hover {
+  transform: translateY(-3px);
+}
+
+.commercial-card-highlight {
+  outline: 1px solid var(--tilla-gold-soft);
+  background: linear-gradient(160deg, #fff 0%, rgba(250, 248, 245, 0.98) 100%);
+}
+
+.commercial-card-deep {
+  background: linear-gradient(155deg, var(--tilla-navy) 0%, var(--tilla-navy-2) 55%, var(--tilla-navy-soft) 100%) !important;
+  box-shadow: var(--tilla-shadow);
+}
+
+.commercial-list li {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(21, 34, 56, 0.07);
+  color: #334155;
+}
+
+.commercial-list li:last-child {
+  border-bottom: none;
+}
+
+.activity-ticker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.activity-ticker-item {
+  flex: 1 1 220px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  background: #fff;
+  border: 1px solid rgba(21, 34, 56, 0.06);
+  box-shadow: var(--tilla-shadow-soft);
+}
+
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+}
+
+.activity-success .activity-dot {
+  background: #16a34a;
+}
+
+.activity-money .activity-dot {
+  background: var(--tilla-gold);
+}
+
+.activity-warn .activity-dot {
+  background: #ea580c;
+}
+
+.activity-success {
+  border-left: 3px solid rgba(22, 163, 74, 0.55);
+}
+
+.activity-money {
+  border-left: 3px solid var(--tilla-gold);
+}
+
+.activity-warn {
+  border-left: 3px solid rgba(234, 88, 12, 0.65);
+}
+
+.footer-mini {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.card.tilla-card .card-header {
+  background: linear-gradient(90deg, var(--tilla-navy) 0%, var(--tilla-navy-2) 100%);
+}
+
+.hero-commercial .btn-link.text-white:hover {
+  color: var(--tilla-gold) !important;
 }
