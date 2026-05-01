@@ -13,6 +13,7 @@ __pycache__/
 # Lokální podklady / screenshoty (nepatří do deploy repozitáře)
 *.xlsx
 *.png
+!tilla/static/brand/*.png
 
 # TILLA local venv & SQLite (Render používá Postgres)
 tilla/.venv/
