@@ -20,12 +20,27 @@ pip install -r requirements.txt
 
 ## Seed databáze
 
+### Ruční seed (vývoj)
+
 ```bash
 cd tilla
 python -m app.seed
 ```
 
-Směnný kurz, poplatková pásma, zálohy, klienti, odběratelé, faktury, platby, zápočty, risk checks a další ukázková data se založí znovu při každém spuštění seedu (databáze se smaže a založí nanovo).
+Tím se databáze **smaže a znovu naplní** (`drop_all`) — používejte jen lokálně / když chcete resetovat demo.
+
+### Automaticky na Renderu (prázdná DB)
+
+Při startu aplikace (`startup`) se po `init_db()` zkontroluje, zda existují tabulky `clients` / `invoices` a zda jsou **obě prázdné**. Pokud ano, proběhne stejný demo seed jako výše — **bez nutnosti shellu** na Render Free.
+
+Při dalším deployi se seed **přeskočí** (už jsou řádky v `clients` nebo `invoices`), takže nedochází k duplicitám.
+
+Logy v stdout:
+
+- `Database empty, running demo seed...` → `Seed completed`
+- `Database already populated` → nic se nemění
+
+Chcete-li auto-seed vypnout (např. prázdná produkční DB bez dema), nastavte env **`TILLA_SKIP_AUTO_SEED=1`**.
 
 ## Spuštění
 
@@ -42,19 +57,22 @@ Nebo kompletní řetězec od nuly:
 cd tilla && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && python -m app.seed && uvicorn app.main:app --reload
 ```
 
-Otevřete v prohlížeči: **http://127.0.0.1:8000** (přesměruje na `/dashboard`).
+Otevřete v prohlížeči: **http://127.0.0.1:8000** → přesměrování na **`/home`** (landing). Dashboard: **`/dashboard`**.
+
+Podrobný přehled změn v3 v souboru **[CHANGELOG_V3.md](./CHANGELOG_V3.md)**.
 
 ## Moduly
 
 | Oblast | Popis |
 |--------|--------|
-| **Dashboard** | Po splatnosti, finalizace, nespárované platby, zápočty, upomínky |
-| **Klienti** | CRUD základních údajů, kontakty, individuální nastavení vs. globální |
-| **Faktury** | Workflow stavů, odkup s kontrolou risk checku a koncentrace, záloha/poplatek z nastavení |
-| **Odběratelé** | Evidence Anchors, simulovaná lustrace s protokolem |
-| **Financování** | Platby, párování, dávky, výpisy, daňové doklady, úroky, pojištění, inkaso |
-| **Analýza** | Tabulka výkonu + graf (Chart.js) |
-| **Nastavení** | Globální parametry (`GlobalSetting`) |
+| **Úvod (`/home`)** | Landing TILLA v3, CTA do demo aplikace |
+| **Dashboard** | KPI + tabulky po splatnosti, finalizace, platby, zápočty, upomínky |
+| **Klienti** | Detail se sídlem, filtrovatelné faktury, nastavení vs. globální |
+| **Faktury** | Workflow, záložky (základní, platby, soubory, daň, emaily), párování platby |
+| **Odběratelé** | Anchors, tabulka s risk / pojištěním, stránka **`/debtors/risk-checks`** |
+| **Financování** | Platby, párování, dávky, výpisy, daňové doklady, úroky, pojištění, **`/finance/settlement`**, inkaso |
+| **Analýza** | Tabulka výkonu + více grafů (Chart.js) |
+| **Nastavení** | Globální parametry (`GlobalSetting`), přepsání u klienta |
 
 ## Business pravidla (zjednodušeně MVP)
 

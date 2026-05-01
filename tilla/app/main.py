@@ -6,7 +6,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.database import BASE_DIR, init_db
-from app.routers import analysis, clients, dashboard, debtors, finance, invoices, settings
+from app.seed import seed_demo_if_empty
+from app.routers import analysis, clients, dashboard, debtors, finance, home, invoices, settings
 
 app = FastAPI(title="TILLA", description="Anchored in Trust — Invoice financing MVP")
 
@@ -25,6 +26,7 @@ app.add_middleware(
 @app.on_event("startup")
 def _startup():
     init_db()
+    seed_demo_if_empty()
 
 
 @app.get("/health")
@@ -34,9 +36,10 @@ def health():
 
 @app.get("/")
 def root():
-    return RedirectResponse(url="/dashboard")
+    return RedirectResponse(url="/home")
 
 
+app.include_router(home.router)
 app.include_router(dashboard.router)
 app.include_router(clients.router)
 app.include_router(debtors.router)
