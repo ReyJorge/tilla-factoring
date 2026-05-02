@@ -44,47 +44,25 @@ def validate_admin_password_env_at_startup() -> None:
     import os
 
     env = os.getenv("ENVIRONMENT", "").strip().lower()
-    pwd = (os.getenv("ADMIN_PASSWORD") or "").strip()
-    blen = len(pwd.encode("utf-8"))
+    admin_pwd = os.getenv("ADMIN_PASSWORD", "").strip()
+    logger.debug(
+        "ADMIN_PASSWORD length=%s",
+        len(admin_pwd.encode("utf-8")),
+    )
 
     if env == "production":
-        if not pwd:
+        if not admin_pwd:
+            raise RuntimeError("ADMIN_PASSWORD is required in production")
+        if len(admin_pwd.encode("utf-8")) > 72:
             raise RuntimeError(
-                "ADMIN_PASSWORD is required when ENVIRONMENT=production. "
-                "Set it in Render Environment (trimmed). Use only for seeding the admin login password — "
-                "never map SESSION_SECRET or other long secrets into ADMIN_PASSWORD."
+                "ADMIN_PASSWORD exceeds bcrypt limit (72 bytes); check Render env mapping.",
             )
-        if blen > 72:
-            raise RuntimeError(
-                f"ADMIN_PASSWORD exceeds bcrypt limit ({blen} bytes, max 72). "
-                "Shorten it or fix Render env mapping (often SESSION_SECRET was pasted into ADMIN_PASSWORD)."
-            )
-        logger.info(
-            "ADMIN_PASSWORD configured for seeding (length=%s bytes)",
-            blen,
-        )
         return
 
-    if pwd:
-        if blen > 72:
-            raise RuntimeError(
-                f"ADMIN_PASSWORD exceeds bcrypt limit ({blen} bytes, max 72)."
-            )
-        logger.info("ADMIN_PASSWORD set (length=%s bytes)", blen)
-    else:
-        logger.info(
-            "ADMIN_PASSWORD unset (development); empty DB seed uses built-in default password",
+    if admin_pwd and len(admin_pwd.encode("utf-8")) > 72:
+        raise RuntimeError(
+            "ADMIN_PASSWORD exceeds bcrypt limit (72 bytes).",
         )
-
-
-def _admin_password_for_seed() -> str:
-    """Plain password for hashing admin user only — never SESSION_SECRET."""
-    import os
-
-    pwd = (os.getenv("ADMIN_PASSWORD") or "").strip()
-    if os.getenv("ENVIRONMENT", "").strip().lower() == "production":
-        return pwd
-    return pwd or "changeme"
 
 
 def seed_demo_if_empty() -> None:
@@ -148,7 +126,14 @@ def seed(skip_schema_reset: bool = False) -> None:
 
     import os
 
-    admin_pwd = _admin_password_for_seed()
+    admin_pwd = os.getenv("ADMIN_PASSWORD", "").strip()
+    if os.getenv("ENVIRONMENT", "").strip().lower() == "production":
+        if not admin_pwd:
+            raise RuntimeError("ADMIN_PASSWORD is required in production")
+    else:
+        if not admin_pwd:
+            admin_pwd = "changeme"
+
     users = [
         User(
             username="admin",
