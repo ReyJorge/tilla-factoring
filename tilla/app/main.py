@@ -9,6 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 import app.models  # noqa: F401 — tabulky na Base.metadata před drop_all/create_all
 
+from app.middleware.attach_user import AttachUserMiddleware
 from app.database import BASE_DIR, Base, engine, get_db, init_db, reset_demo_schema
 from app.models import (
     BankStatement,
@@ -22,7 +23,7 @@ from app.models import (
     RiskCheck,
 )
 from app.seed import seed, seed_demo_if_empty
-from app.routers import analysis, clients, dashboard, debtors, finance, home, invoices, settings
+from app.routers import analysis, auth_router, clients, credit_risk_agent, dashboard, debtors, finance, home, invoices, settings
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,8 @@ STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+# AttachUser runs inside SessionMiddleware so request.session is populated first (SessionMiddleware registered last = outermost).
+app.add_middleware(AttachUserMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET", "tilla-dev-session-secret-change-me"),
@@ -113,6 +116,10 @@ def debug_analysis_check(db: Session = Depends(get_db)):
 def root():
     return RedirectResponse(url="/home")
 
+
+app.include_router(auth_router.router)
+app.include_router(credit_risk_agent.pages)
+app.include_router(credit_risk_agent.api)
 
 app.include_router(home.router)
 app.include_router(dashboard.router)

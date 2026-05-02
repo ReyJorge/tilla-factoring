@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Přístup odepřen{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7">
+  <div class="card tilla-card p-5 text-center">
+    <h1 class="h4 fw-semibold mb-3">403 — přístup k Credit Risk Agent zamítnut</h1>
+    <p class="text-muted-soft mb-4">Přihlášení platí, ale váš účet nemá oprávnění (vyžaduje roli <strong>admin</strong> / <strong>superadmin</strong> nebo e-mail shodný s <code>OWNER_EMAIL</code>).</p>
+    <a class="btn btn-inst-outline btn-sm" href="/dashboard">Zpět na dashboard</a>
+  </div>
+</div></div>
+{% endblock %}

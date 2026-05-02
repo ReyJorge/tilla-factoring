@@ -45,9 +45,19 @@
             </ul>
           </li>
           <li class="nav-item"><a class="nav-link {% if nav_active=='analysis' %}active{% endif %}" href="/analysis/debtors">Analýza</a></li>
+          {% if allow_credit_risk_agent(request) %}
+          <li class="nav-item"><a class="nav-link {% if nav_active=='credit-risk-agent' %}active{% endif %}" href="/credit-risk-agent">Credit Risk Agent</a></li>
+          {% endif %}
           <li class="nav-item"><a class="nav-link {% if nav_active=='settings' %}active{% endif %}" href="/settings/global">Nastavení</a></li>
         </ul>
-        <div class="navbar-text small">demo@tilla.cz</div>
+        <div class="d-flex align-items-lg-center gap-2 ms-lg-auto mt-3 mt-lg-0 flex-wrap">
+          {% if request.state.user %}
+          <span class="small text-muted-soft">{{ request.state.user.full_name }}</span>
+          <a class="btn btn-sm btn-outline-secondary" href="/logout">Odhlásit</a>
+          {% else %}
+          <a class="btn btn-sm btn-inst-outline" href="/login">Přihlásit</a>
+          {% endif %}
+        </div>
       </div>
     </div>
   </nav>

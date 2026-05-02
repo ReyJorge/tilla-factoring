@@ -104,6 +104,43 @@ Podrobný přehled změn v3 v souboru **[CHANGELOG_V3.md](./CHANGELOG_V3.md)**.
 - Fronta úloh (Celery/RQ) pro emaily, import výpisů a reminder workflow.
 - Komplexnější účetní zápočty a měnové přeceňování.
 
+## Tilla Credit Risk Agent (MVP)
+
+Interní nástroj **`/credit-risk-agent`** — doporučení úvěrového rizika pro factoring / embedded invoice financing.  
+**Nejedná se o automatické schvalování**; výstup je pouze podklad pro lidského schvalovatele.
+
+### Požadované proměnné prostředí (Render / lokálně)
+
+| Proměnná | Popis |
+|----------|--------|
+| **`OPENAI_API_KEY`** | Klíč OpenAI — **nikdy** necommitovat; nastavit jen na serveru. |
+| **`OWNER_EMAIL`** | E-mail uživatele v DB (malými písmeny), který má přístup i bez role admin/superadmin. |
+| **`ADMIN_PASSWORD`** | Heslo pro uživatele `admin` při seedu (default lokálně `changeme`). |
+| **`SESSION_SECRET`** | Již používá aplikace pro cookie session. |
+| **`OPENAI_MODEL`** | Volitelně (default v kódu `gpt-4o-mini`). |
+| **`DEBUG`** | `1` = logovat více detailů požadavků (citlivá data — jen vývoj). |
+| **`CREDIT_RISK_SUPPLIER_CAP_CZK`** | Volitelný číselný strop pro rule pre-check (faktura / kombinovaná expozice). |
+| **`CREDIT_RISK_ANCHOR_CAP_CZK`** | Totéž pro anchor. |
+
+### Přístup
+
+1. Přihlášení: **`/login`** (uživatel `admin` + `ADMIN_PASSWORD`, popř. uživatel se stejným emailem jako `OWNER_EMAIL` po doplnění hesla seedem).  
+2. Stránka agenta: **`/credit-risk-agent`** — jen **`admin`**, **`superadmin`**, nebo shoda emailu s **`OWNER_EMAIL`**.  
+3. API (chráněné stejně): **`POST /api/credit-risk-agent/analyse`** (JSON + `csrf_token` ze session).  
+
+### Knowledge base
+
+Markdown soubory v adresáři **`tilla/knowledge_base/credit_risk/`** — jsou **návrh**, před produkcí schválit Risk/Legal.  
+Úpravy: editovat `.md`, commitnout, redeploy — bez vector DB (TODO v souborech).
+
+### Migrace DB (existující Postgres na Renderu)
+
+Pro doplnění sloupce `users.password_hash` a tabulky auditu spusťte SQL soubor:
+
+**`migrations/create_credit_risk_agent_runs.sql`**
+
+Nové instalace: tabulky vzniknou i přes `create_all()` při startu aplikace.
+
 ## Licence
 
 Ukázkový interní MVP — úpravy dle potřeby projektu.

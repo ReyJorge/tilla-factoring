@@ -6,7 +6,7 @@ import logging
 import random
 from datetime import date, datetime, timedelta
 
-from sqlalchemy import inspect
+from sqlalchemy import func, inspect
 
 from app.database import SessionLocal, engine, init_db
 from app.models import (
@@ -33,6 +33,7 @@ from app.models import (
     ProtocolFlag,
 )
 from app.services import invoice_service
+from app.services.password_hashing import hash_password
 from app.services.settings_service import SETTING_KEYS
 
 logger = logging.getLogger(__name__)
@@ -97,8 +98,17 @@ def seed(skip_schema_reset: bool = False) -> None:
     )
     BLOCK_DEBTOR_POSITIONS = frozenset({18, 19})
 
+    import os
+
+    admin_pwd = os.getenv("ADMIN_PASSWORD", "changeme")
     users = [
-        User(username="admin", email="admin@tilla.cz", full_name="Tereza Dvořáková", role="superadmin"),
+        User(
+            username="admin",
+            email="admin@tilla.cz",
+            full_name="Tereza Dvořáková",
+            role="superadmin",
+            password_hash=hash_password(admin_pwd),
+        ),
         User(username="mnovak", email="mnovak@tilla.cz", full_name="Martin Novák", role="user"),
         User(username="zberg", email="zberg@tilla.cz", full_name="Zuzana Bergmannová", role="user"),
         User(username="lkovar", email="lkovar@tilla.cz", full_name="Lukáš Kovář", role="owner"),
@@ -106,6 +116,12 @@ def seed(skip_schema_reset: bool = False) -> None:
     ]
     db.add_all(users)
     db.flush()
+
+    owner_mail = os.getenv("OWNER_EMAIL", "").strip().lower()
+    if owner_mail:
+        ou = db.query(User).filter(func.lower(User.email) == owner_mail).first()
+        if ou and not ou.password_hash:
+            ou.password_hash = hash_password(admin_pwd)
 
     defaults = {
         "kurz.EUR": "25.00",

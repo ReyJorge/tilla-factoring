@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Tilla Credit Risk Agent{% endblock %}
+{% block head_extra %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0">
+  <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+  <li class="breadcrumb-item active">Credit Risk Agent</li>
+</ol></nav>
+
+<h1 class="h3 fw-semibold mb-2">Tilla Credit Risk Agent</h1>
+<p class="text-muted-soft small mb-4">
+  Draft MVP — doporučení není právně závazné. Agent nesmí nahradit lidské schvalování.
+  KB: <code>knowledge_base/credit_risk/</code>.
+</p>
+
+<div class="row g-4">
+  <div class="col-xl-7">
+    <div class="card tilla-card">
+      <div class="card-header">Vstupy obchodního případu</div>
+      <div class="card-body">
+        <form id="cra-form" class="row g-3 small" onsubmit="return false;">
+          <div class="col-md-6"><label class="form-label">Supplier name</label><input id="supplier_name" class="form-control form-control-sm" required></div>
+          <div class="col-md-6"><label class="form-label">Supplier ICO</label><input id="supplier_ico" class="form-control form-control-sm" required maxlength="32"></div>
+          <div class="col-md-6"><label class="form-label">Anchor name</label><input id="anchor_name" class="form-control form-control-sm" required></div>
+          <div class="col-md-6"><label class="form-label">Anchor ICO</label><input id="anchor_ico" class="form-control form-control-sm" required maxlength="32"></div>
+          <div class="col-md-6"><label class="form-label">Invoice amount (CZK)</label><input id="invoice_amount" type="number" step="0.01" min="0.01" class="form-control form-control-sm" required></div>
+          <div class="col-md-6"><label class="form-label">Requested advance %</label><input id="requested_advance_pct" type="number" step="0.1" min="0" max="100" class="form-control form-control-sm" required></div>
+          <div class="col-md-4"><label class="form-label">Revenue latest year</label><input id="revenue_latest_year" class="form-control form-control-sm" placeholder="např. 12 500 000"></div>
+          <div class="col-md-4"><label class="form-label">EBITDA latest year</label><input id="ebitda_latest_year" class="form-control form-control-sm"></div>
+          <div class="col-md-4"><label class="form-label">Profit/loss latest year</label><input id="profit_loss_latest_year" class="form-control form-control-sm"></div>
+          <div class="col-md-6"><label class="form-label">Receivables</label><input id="receivables" class="form-control form-control-sm"></div>
+          <div class="col-md-6"><label class="form-label">Payables</label><input id="payables" class="form-control form-control-sm"></div>
+          <div class="col-12"><label class="form-label">Overdue information</label><textarea id="overdue_information" class="form-control form-control-sm" rows="2"></textarea></div>
+          <div class="col-md-6"><label class="form-label">Existing exposure — supplier</label><input id="existing_exposure_supplier" class="form-control form-control-sm"></div>
+          <div class="col-md-6"><label class="form-label">Existing exposure — anchor</label><input id="existing_exposure_anchor" class="form-control form-control-sm"></div>
+          <div class="col-md-6"><label class="form-label">Scoring result</label>
+            <select id="scoring_result" class="form-select form-select-sm" required>
+              <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+            </select>
+          </div>
+          <div class="col-12"><label class="form-label">Free text notes</label><textarea id="notes" class="form-control form-control-sm" rows="3"></textarea></div>
+          <div class="col-12">
+            <button type="button" id="cra-submit" class="btn btn-inst-primary btn-sm">Generate credit recommendation</button>
+            <span id="cra-status" class="small text-muted-soft ms-2"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card tilla-card mb-4">
+      <div class="card-header">Poslední analýzy (vaše)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 tilla-table align-middle">
+            <thead><tr><th>Datum</th><th>Supplier</th><th>Anchor</th><th class="text-end">Částka</th><th>Doporučení</th><th></th></tr></thead>
+            <tbody>
+              {% for h in history %}
+              <tr>
+                <td class="text-nowrap small">{{ h.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td class="small">{{ h.supplier_name[:28] }}</td>
+                <td class="small">{{ h.anchor_name[:28] }}</td>
+                <td class="text-end small">{{ h.invoice_amount|cs_money }}</td>
+                <td class="small">{{ h.recommendation }}</td>
+                <td><a class="btn btn-sm btn-outline-secondary py-0" href="/credit-risk-agent/run/{{ h.id }}">Detail</a></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="6" class="text-muted small p-3">Zatím žádné analýzy.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="cra-result" class="mt-4 d-none">
+  <div class="card tilla-card"><div class="card-header">Výstup agenta</div><div class="card-body small" id="cra-result-body"></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const statusEl = document.getElementById('cra-status');
+  const resultWrap = document.getElementById('cra-result');
+  const resultBody = document.getElementById('cra-result-body');
+
+  function val(id) {
+    const el = document.getElementById(id);
+    return el ? (el.value || '').trim() : '';
+  }
+
+  document.getElementById('cra-submit').addEventListener('click', async () => {
+    statusEl.textContent = 'Probíhá…';
+    resultWrap.classList.add('d-none');
+    resultBody.replaceChildren();
+
+    const payload = {
+      supplier_name: val('supplier_name'),
+      supplier_ico: val('supplier_ico'),
+      anchor_name: val('anchor_name'),
+      anchor_ico: val('anchor_ico'),
+      invoice_amount: parseFloat(val('invoice_amount')),
+      requested_advance_pct: parseFloat(val('requested_advance_pct')),
+      revenue_latest_year: val('revenue_latest_year') || null,
+      ebitda_latest_year: val('ebitda_latest_year') || null,
+      profit_loss_latest_year: val('profit_loss_latest_year') || null,
+      receivables: val('receivables') || null,
+      payables: val('payables') || null,
+      overdue_information: val('overdue_information') || null,
+      existing_exposure_supplier: val('existing_exposure_supplier') || null,
+      existing_exposure_anchor: val('existing_exposure_anchor') || null,
+      scoring_result: val('scoring_result'),
+      notes: val('notes') || null,
+      csrf_token: csrf,
+    };
+
+    try {
+      const r = await fetch('/api/credit-risk-agent/analyse', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      if (!data.ok) {
+        const err = data.error;
+        statusEl.textContent = 'Chyba: ' + (typeof err === 'string' ? err : JSON.stringify(err));
+        return;
+      }
+      statusEl.textContent = 'Hotovo · run #' + data.run_id;
+      const pre = document.createElement('pre');
+      pre.className = 'small bg-light p-3 mb-0';
+      pre.style.maxHeight = '70vh';
+      pre.style.overflow = 'auto';
+      pre.textContent = JSON.stringify(data.result, null, 2);
+      resultBody.appendChild(pre);
+      const foot = document.createElement('p');
+      foot.className = 'small text-muted-soft mt-2 mb-0';
+      foot.appendChild(document.createTextNode('Uloženo — '));
+      const a = document.createElement('a');
+      a.href = '/credit-risk-agent/run/' + data.run_id;
+      a.textContent = 'Strukturovaný detail';
+      foot.appendChild(a);
+      foot.appendChild(document.createTextNode(' · JSON obsahuje všechny požadované sekce.'));
+      resultBody.appendChild(foot);
+      resultWrap.classList.remove('d-none');
+      window.location.hash = 'cra-result';
+    } catch (e) {
+      statusEl.textContent = 'Chyba spojení';
+    }
+  });
+})();
+</script>
+{% endblock %}

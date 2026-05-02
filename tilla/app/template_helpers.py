@@ -1,12 +1,29 @@
+import json
 from datetime import date, datetime
 from pathlib import Path
 
 from fastapi import Request
 from starlette.templating import Jinja2Templates
 
+from app.authz import user_can_credit_risk_agent
 from app.database import BASE_DIR
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+def pretty_json_filter(obj):
+    try:
+        return json.dumps(obj, ensure_ascii=False, indent=2)
+    except Exception:
+        return str(obj)
+
+
+def allow_credit_risk_agent(req: Request) -> bool:
+    return user_can_credit_risk_agent(getattr(getattr(req, "state", None), "user", None))
+
+
+templates.env.filters["pretty_json"] = pretty_json_filter
+templates.env.globals["allow_credit_risk_agent"] = allow_credit_risk_agent
 
 
 def cs_money(amount, currency: str = "CZK") -> str:

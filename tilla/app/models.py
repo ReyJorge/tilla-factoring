@@ -9,6 +9,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    JSON,
     Numeric,
     String,
     Text,
@@ -20,6 +21,7 @@ from app.database import Base
 
 class UserRole(str, enum.Enum):
     SUPERADMIN = "superadmin"
+    ADMIN = "admin"
     USER = "user"
     OWNER = "owner"
 
@@ -72,6 +74,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(160), nullable=False)
     role: Mapped[str] = mapped_column(String(40), default=UserRole.USER.value)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     signature_cz: Mapped[str | None] = mapped_column(Text, nullable=True)
     signature_en: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -366,3 +369,25 @@ class AdvanceInterestLine(Base):
     invoice_id: Mapped[int] = mapped_column(ForeignKey("invoices.id"), nullable=False)
     period_month: Mapped[str] = mapped_column(String(7), nullable=False)
     interest_amount_czk: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+
+
+class CreditRiskAgentRun(Base):
+    """Audit trail for Credit Risk Agent analyses."""
+
+    __tablename__ = "credit_risk_agent_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    supplier_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    supplier_ico: Mapped[str] = mapped_column(String(32), nullable=False)
+    anchor_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    anchor_ico: Mapped[str] = mapped_column(String(32), nullable=False)
+    invoice_amount: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
+    scoring_result: Mapped[str] = mapped_column(String(8), nullable=False)
+    recommendation: Mapped[str] = mapped_column(String(80), nullable=False)
+    confidence_level: Mapped[str] = mapped_column(String(40), nullable=False)
+    full_input_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    full_output_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    user: Mapped["User"] = relationship()

@@ -35,3 +35,6 @@ services:
       # Jednorázová oprava starého schématu Postgres: DROP SCHEMA public CASCADE + seed. Po úspěšném prvním deployi nastavte na "0".
       - key: TILLA_FORCE_REBUILD
         value: "1"
+      # Credit Risk Agent — v Dashboard nastavte Secrets: OPENAI_API_KEY, OWNER_EMAIL, ADMIN_PASSWORD
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Přihlášení{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card tilla-card p-4">
+      <h1 class="h5 mb-3 fw-semibold">Přihlášení</h1>
+      {% if login_error %}<div class="alert alert-danger py-2 small">{{ login_error }}</div>{% endif %}
+      <form method="post" action="/login" class="small">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="next" value="{{ next_path }}">
+        <div class="mb-3">
+          <label class="form-label">Uživatelské jméno</label>
+          <input name="username" class="form-control form-control-sm" required autocomplete="username">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Heslo</label>
+          <input name="password" type="password" class="form-control form-control-sm" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-inst-primary btn-sm">Přihlásit</button>
+      </form>
+      <p class="text-muted-soft small mt-3 mb-0">Interní nástroj — použijte účet admin / OWNER_EMAIL podle nastavení Render.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Credit Risk Run #{{ run.id }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0">
+  <li class="breadcrumb-item"><a href="/credit-risk-agent">Credit Risk Agent</a></li>
+  <li class="breadcrumb-item active">Run #{{ run.id }}</li>
+</ol></nav>
+
+<div class="card tilla-card mb-4">
+  <div class="card-header">Shrnutí auditu</div>
+  <div class="card-body small row g-3">
+    <div class="col-md-4"><span class="text-muted-soft">Vytvořeno</span><br><strong>{{ run.created_at.strftime('%d.%m.%Y %H:%M') }}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">Doporučení</span><br><strong>{{ run.recommendation }}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">Confidence</span><br><strong>{{ run.confidence_level }}</strong></div>
+    <div class="col-md-6"><span class="text-muted-soft">Supplier</span><br>{{ run.supplier_name }} <span class="text-muted-soft">· IČ {{ run.supplier_ico }}</span></div>
+    <div class="col-md-6"><span class="text-muted-soft">Anchor</span><br>{{ run.anchor_name }} <span class="text-muted-soft">· IČ {{ run.anchor_ico }}</span></div>
+    <div class="col-md-4"><span class="text-muted-soft">Částka faktury</span><br>{{ run.invoice_amount|cs_money }}</div>
+    <div class="col-md-4"><span class="text-muted-soft">Scoring</span><br>{{ run.scoring_result }}</div>
+  </div>
+</div>
+
+{% set out = run.full_output_json %}
+<div class="card tilla-card mb-3"><div class="card-header">Structured output</div><div class="card-body small">
+  <dl class="row mb-0">
+    {% for key in ['recommendation','suggested_risk_grade','suggested_supplier_limit','suggested_anchor_exposure_limit','suggested_advance_rate','confidence_level','credit_memo_summary','rationale'] %}
+      {% if key in out %}
+      <dt class="col-sm-4 text-muted-soft">{{ key }}</dt><dd class="col-sm-8">{{ out[key] }}</dd>
+      {% endif %}
+    {% endfor %}
+  </dl>
+</div></div>
+
+{% if out.key_risks %}<div class="card tilla-card mb-3"><div class="card-header">Key risks</div><div class="card-body small"><ul class="mb-0">{% for x in out.key_risks %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+{% if out.mitigants %}<div class="card tilla-card mb-3"><div class="card-header">Mitigants</div><div class="card-body small"><ul class="mb-0">{% for x in out.mitigants %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+{% if out.missing_information %}<div class="card tilla-card mb-3"><div class="card-header">Missing information</div><div class="card-body small"><ul class="mb-0">{% for x in out.missing_information %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+{% if out.conditions_before_funding %}<div class="card tilla-card mb-3"><div class="card-header">Conditions before funding</div><div class="card-body small"><ul class="mb-0">{% for x in out.conditions_before_funding %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+{% if out.policy_references_used %}<div class="card tilla-card mb-3"><div class="card-header">Policy references used</div><div class="card-body small"><ul class="mb-0">{% for x in out.policy_references_used %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+
+<details class="small text-muted-soft"><summary>Raw JSON (audit)</summary>
+<pre class="small bg-light p-3 mt-2 overflow-auto" style="max-height:320px">{{ run.full_output_json | pretty_json }}</pre>
+</details>
+{% endblock %}
