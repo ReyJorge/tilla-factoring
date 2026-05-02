@@ -39,6 +39,54 @@ from app.services.settings_service import SETTING_KEYS
 logger = logging.getLogger(__name__)
 
 
+def validate_admin_password_env_at_startup() -> None:
+    """Production requires ADMIN_PASSWORD; logs UTF-8 byte length only (never the secret)."""
+    import os
+
+    env = os.getenv("ENVIRONMENT", "").strip().lower()
+    pwd = (os.getenv("ADMIN_PASSWORD") or "").strip()
+    blen = len(pwd.encode("utf-8"))
+
+    if env == "production":
+        if not pwd:
+            raise RuntimeError(
+                "ADMIN_PASSWORD is required when ENVIRONMENT=production. "
+                "Set it in Render Environment (trimmed). Use only for seeding the admin login password — "
+                "never map SESSION_SECRET or other long secrets into ADMIN_PASSWORD."
+            )
+        if blen > 72:
+            raise RuntimeError(
+                f"ADMIN_PASSWORD exceeds bcrypt limit ({blen} bytes, max 72). "
+                "Shorten it or fix Render env mapping (often SESSION_SECRET was pasted into ADMIN_PASSWORD)."
+            )
+        logger.info(
+            "ADMIN_PASSWORD configured for seeding (length=%s bytes)",
+            blen,
+        )
+        return
+
+    if pwd:
+        if blen > 72:
+            raise RuntimeError(
+                f"ADMIN_PASSWORD exceeds bcrypt limit ({blen} bytes, max 72)."
+            )
+        logger.info("ADMIN_PASSWORD set (length=%s bytes)", blen)
+    else:
+        logger.info(
+            "ADMIN_PASSWORD unset (development); empty DB seed uses built-in default password",
+        )
+
+
+def _admin_password_for_seed() -> str:
+    """Plain password for hashing admin user only — never SESSION_SECRET."""
+    import os
+
+    pwd = (os.getenv("ADMIN_PASSWORD") or "").strip()
+    if os.getenv("ENVIRONMENT", "").strip().lower() == "production":
+        return pwd
+    return pwd or "changeme"
+
+
 def seed_demo_if_empty() -> None:
     """Na Renderu (bez shellu) naplní demo data pouze pokud jsou tabulky clients/invoices prázdné."""
     import os
@@ -100,7 +148,7 @@ def seed(skip_schema_reset: bool = False) -> None:
 
     import os
 
-    admin_pwd = os.getenv("ADMIN_PASSWORD", "changeme")
+    admin_pwd = _admin_password_for_seed()
     users = [
         User(
             username="admin",
