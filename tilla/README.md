@@ -115,7 +115,7 @@ Interní nástroj **`/credit-risk-agent`** — doporučení úvěrového rizika 
 |----------|--------|
 | **`OPENAI_API_KEY`** | Klíč OpenAI — **nikdy** necommitovat; nastavit jen na serveru. |
 | **`OWNER_EMAIL`** | E-mail uživatele v DB (malými písmeny), který má přístup i bez role admin/superadmin. |
-| **`ADMIN_PASSWORD`** | Heslo pro uživatele `admin` při seedu (default lokálně `changeme`). |
+| **`ADMIN_PASSWORD`** | Heslo pro uživatele `admin` při seedu (v dev bez hodnoty fallback `admin123`). |
 | **`SESSION_SECRET`** | Již používá aplikace pro cookie session. |
 | **`OPENAI_MODEL`** | Volitelně (default v kódu `gpt-4o-mini`). |
 | **`DEBUG`** | `1` = logovat více detailů požadavků (citlivá data — jen vývoj). |

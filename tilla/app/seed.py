@@ -39,30 +39,32 @@ from app.services.settings_service import SETTING_KEYS
 logger = logging.getLogger(__name__)
 
 
-def validate_admin_password_env_at_startup() -> None:
-    """Production requires ADMIN_PASSWORD; logs UTF-8 byte length only (never the secret)."""
+def get_admin_password() -> str:
+    """ADMIN_PASSWORD only (trimmed); required in production/staging; never SESSION_SECRET."""
     import os
 
-    env = os.getenv("ENVIRONMENT", "").strip().lower()
-    admin_pwd = os.getenv("ADMIN_PASSWORD", "").strip()
-    logger.debug(
-        "ADMIN_PASSWORD length=%s",
-        len(admin_pwd.encode("utf-8")),
-    )
+    raw = os.getenv("ADMIN_PASSWORD")
+    env = os.getenv("ENVIRONMENT", "development").strip().lower()
 
-    if env == "production":
-        if not admin_pwd:
-            raise RuntimeError("ADMIN_PASSWORD is required in production")
-        if len(admin_pwd.encode("utf-8")) > 72:
+    if raw is None or not raw.strip():
+        if env in {"production", "staging"}:
+            raise RuntimeError("ADMIN_PASSWORD is required in production/staging")
+        password = "admin123"
+        explicit_set = False
+    else:
+        password = raw.strip()
+        if len(password.encode("utf-8")) > 72:
             raise RuntimeError(
-                "ADMIN_PASSWORD exceeds bcrypt limit (72 bytes); check Render env mapping.",
+                "ADMIN_PASSWORD is too long for bcrypt. Use a password <=72 bytes.",
             )
-        return
+        explicit_set = True
 
-    if admin_pwd and len(admin_pwd.encode("utf-8")) > 72:
-        raise RuntimeError(
-            "ADMIN_PASSWORD exceeds bcrypt limit (72 bytes).",
-        )
+    logger.info("ADMIN_PASSWORD_SET=%s", str(explicit_set).lower())
+    logger.info(
+        "ADMIN_PASSWORD_BYTES=%s",
+        len(password.encode("utf-8")),
+    )
+    return password
 
 
 def seed_demo_if_empty() -> None:
@@ -126,13 +128,7 @@ def seed(skip_schema_reset: bool = False) -> None:
 
     import os
 
-    admin_pwd = os.getenv("ADMIN_PASSWORD", "").strip()
-    if os.getenv("ENVIRONMENT", "").strip().lower() == "production":
-        if not admin_pwd:
-            raise RuntimeError("ADMIN_PASSWORD is required in production")
-    else:
-        if not admin_pwd:
-            admin_pwd = "changeme"
+    admin_pwd = get_admin_password()
 
     users = [
         User(

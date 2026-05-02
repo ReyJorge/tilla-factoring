@@ -22,7 +22,7 @@ from app.models import (
     Reminder,
     RiskCheck,
 )
-from app.seed import seed, seed_demo_if_empty, validate_admin_password_env_at_startup
+from app.seed import get_admin_password, seed, seed_demo_if_empty
 from app.routers import analysis, auth_router, clients, credit_risk_agent, dashboard, debtors, finance, home, invoices, settings
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 def _startup():
-    validate_admin_password_env_at_startup()
+    get_admin_password()
     force_rebuild = os.getenv("TILLA_FORCE_REBUILD", "").strip() == "1"
     if force_rebuild:
         logger.info("FORCE REBUILD ENABLED")
