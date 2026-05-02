@@ -124,7 +124,8 @@ Interní nástroj **`/credit-risk-agent`** — doporučení úvěrového rizika 
 
 ### Přístup
 
-1. Přihlášení: **`/login`** (uživatel `admin` + `ADMIN_PASSWORD`, popř. uživatel se stejným emailem jako `OWNER_EMAIL` po doplnění hesla seedem).  
+1. **Lokálně:** zkopíruj `tilla/.env.example` → `tilla/.env` (nebo použij přiložený vývojářský `.env`; hodnoty se načtou přes `python-dotenv` při importu `app.database`).
+2. Přihlášení: **`/login`** (uživatel `admin` + `ADMIN_PASSWORD`, popř. uživatel se stejným emailem jako `OWNER_EMAIL` po doplnění hesla seedem).  
 2. Stránka agenta: **`/credit-risk-agent`** — jen **`admin`**, **`superadmin`**, nebo shoda emailu s **`OWNER_EMAIL`**.  
 3. API (chráněné stejně): **`POST /api/credit-risk-agent/analyse`** (JSON + `csrf_token` ze session).  
 

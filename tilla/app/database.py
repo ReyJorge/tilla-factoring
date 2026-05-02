@@ -10,6 +10,13 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(BASE_DIR / ".env")
+except ImportError:
+    pass
+
 
 def _normalize_database_url(url: str) -> str:
     """Render/Heroku někdy posílají postgres:// — SQLAlchemy 2 + psycopg2 potřebuje předponu."""
