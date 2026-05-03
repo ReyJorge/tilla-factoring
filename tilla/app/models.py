@@ -372,7 +372,7 @@ class AdvanceInterestLine(Base):
 
 
 class CreditRiskAgentRun(Base):
-    """Audit trail for Credit Risk Agent analyses."""
+    """Audit trail for Credit Risk Officer analyses."""
 
     __tablename__ = "credit_risk_agent_runs"
 
@@ -389,5 +389,19 @@ class CreditRiskAgentRun(Base):
     confidence_level: Mapped[str] = mapped_column(String(40), nullable=False)
     full_input_json: Mapped[dict] = mapped_column(JSON, nullable=False)
     full_output_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    workflow_status: Mapped[str] = mapped_column(String(40), default="Draft", nullable=False)
+    workflow_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    model_score: Mapped[float | None] = mapped_column(Numeric(8, 2), nullable=True)
+    risk_band: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    rating_gate: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    recommended_advance_pct: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)
+    recommended_fee_pct: Mapped[float | None] = mapped_column(Numeric(6, 3), nullable=True)
+    policy_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    approval_level_required: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    can_fund_now: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    model_version: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    kb_version: Mapped[str | None] = mapped_column(String(48), nullable=True)
 
     user: Mapped["User"] = relationship()

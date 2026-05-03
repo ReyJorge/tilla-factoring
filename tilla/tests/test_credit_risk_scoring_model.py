@@ -111,14 +111,23 @@ class TestDeterminism(unittest.TestCase):
 class TestLLMGuardrails(unittest.TestCase):
     def test_guardrails_block_approve_on_stop(self):
         mr = {"rating_gate": "STOP", "risk_band": "D", "concentration_flag": "GREEN"}
+        pr = {"final_policy_status": "STOP", "hard_stops": ["POLICY_MODEL_RATING_GATE_STOP"], "manual_review_triggers": []}
         interp = {"recommendation": "Approve", "risk_grade": "A", "key_risks": []}
-        out = cra.enforce_llm_guardrails(mr, interp)
+        out = cra.enforce_llm_guardrails(mr, pr, interp)
+        self.assertEqual(out["recommendation"], "Reject")
+
+    def test_guardrails_policy_stop_overrides_approve(self):
+        mr = {"rating_gate": "OK", "risk_band": "A", "concentration_flag": "GREEN"}
+        pr = {"final_policy_status": "STOP", "hard_stops": ["POLICY_DISPUTE_YES_NO_AUTOFUND"], "manual_review_triggers": []}
+        interp = {"recommendation": "Approve", "key_risks": []}
+        out = cra.enforce_llm_guardrails(mr, pr, interp)
         self.assertEqual(out["recommendation"], "Reject")
 
     def test_guardrails_manual_review_red_flag(self):
         mr = {"rating_gate": "OK", "risk_band": "A", "concentration_flag": "RED FLAG"}
+        pr = {"final_policy_status": "MANUAL", "hard_stops": [], "manual_review_triggers": ["POLICY_CONCENTRATION_RED_FLAG"]}
         interp = {"recommendation": "Approve", "risk_grade": "A", "key_risks": []}
-        out = cra.enforce_llm_guardrails(mr, interp)
+        out = cra.enforce_llm_guardrails(mr, pr, interp)
         self.assertEqual(out["recommendation"], "Human review required")
 
 

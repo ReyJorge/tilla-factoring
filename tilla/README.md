@@ -104,55 +104,71 @@ Podrobný přehled změn v3 v souboru **[CHANGELOG_V3.md](./CHANGELOG_V3.md)**.
 - Fronta úloh (Celery/RQ) pro emaily, import výpisů a reminder workflow.
 - Komplexnější účetní zápočty a měnové přeceňování.
 
-## Tilla Credit Risk Agent (MVP)
+## Tilla Credit Risk Officer v1
 
-Interní nástroj **`/credit-risk-agent`** — doporučení úvěrového rizika pro factoring / embedded invoice financing.  
-**Nejedná se o automatické schvalování**; výstup je pouze podklad pro lidského schvalovatele.
+Interní embedded invoice-financing risk stack **`/credit-risk-agent`** + **`/credit-risk-agent/portfolio`**.
 
-### Požadované proměnné prostředí (Render / lokálně)
+### Princip vrstev
+
+| Vrstva | Zdroj pravdy | Soubor / výstup |
+|--------|----------------|-----------------|
+| Deterministické skóre | Excel workbook → Python runtime | `credit_risk_excel_model.py`, wrapper `credit_risk_scoring_engine.calculate_credit_risk` → `model_result` |
+| Policy kontroly | Pravidla nad vstupem + sync model triggerů | `credit_risk_policy_engine.run_policy_checks` → `policy_check_result` (`PASS` / `CONDITIONAL` / `MANUAL` / `STOP`) |
+| AI memo | Pouze narrative JSON | `credit_risk_agent_service.analyse_credit_risk` — nesmí měnit advance/fee/brány; server přepíše `recommendation` podle `final_decision` |
+| Workflow | Člověk | HTTP `PATCH /api/credit-risk-agent/run/{id}/workflow`, audit tabulka |
+
+Knowledge base (memo vrstva načítá **`NN_*.md`**): `tilla/knowledge_base/credit_risk/00_governance.md` … `17_model_limitations.md`.
+
+### Tvrdé zákazy (STOP)
+
+Nevydává se automatické financování (`final_decision.can_fund_now = false`), pokud platí STOP (`policy_check_result.final_policy_status == STOP`, případně `rating_gate == STOP`, spor, fraud příznaky atd.). Workflow akce **`Approved by human`** je API zamítnuto při STOP / hard stops.
+
+### Proměnné prostředí
 
 | Proměnná | Popis |
 |----------|--------|
-| **`OPENAI_API_KEY`** | Klíč OpenAI — **nikdy** necommitovat; nastavit jen na serveru. |
-| **`OWNER_EMAIL`** | E-mail uživatele v DB (malými písmeny), který má přístup i bez role admin/superadmin. |
-| **`ADMIN_PASSWORD`** | Heslo pro uživatele `admin` při seedu (v dev bez hodnoty fallback `admin123`). |
-| **`SESSION_SECRET`** | Již používá aplikace pro cookie session. |
-| **`OPENAI_MODEL`** | Volitelně (default v kódu `gpt-4o-mini`). |
-| **`DEBUG`** | `1` = logovat více detailů požadavků (citlivá data — jen vývoj). |
-| **`CREDIT_RISK_SUPPLIER_CAP_CZK`** | Volitelný číselný strop pro rule pre-check (faktura / kombinovaná expozice). |
-| **`CREDIT_RISK_ANCHOR_CAP_CZK`** | Totéž pro anchor. |
-| **`CREDIT_RISK_SCORING_MODEL_PATH`** | Absolutní cesta k `.xlsx` scoring modelu (jinak výchozí soubor ve `knowledge_base/credit_risk/scoring_model/`). |
+| **`OPENAI_API_KEY`** | Volitelné — bez klíče se použije deterministický memo fallback (viz testy). |
+| **`OWNER_EMAIL`** | Shoda emailu uživatele v DB ⇒ přístup k CRO (vedle rolí admin/superadmin). |
+| **`ADMIN_PASSWORD`** | Seed heslo admin účtu. |
+| **`SESSION_SECRET`** | Cookie session + mini test harness. |
+| **`OPENAI_MODEL`** | Např. `gpt-4o-mini`. |
+| **`DEBUG`** | `1` ⇒ více logů (citlivá data — jen vývoj). |
+| **`CREDIT_RISK_SUPPLIER_CAP_CZK`** / **`CREDIT_RISK_ANCHOR_CAP_CZK`** | Volitelné limity pro policy překročení (viz `08_fraud_operational_checklist.md`). |
+| **`CREDIT_RISK_SCORING_MODEL_PATH`** | Absolutní cesta k `.xlsx` (jinak výchozí soubor ve `knowledge_base/credit_risk/scoring_model/`). |
 
-### Přístup
+### Render / Postgres / SQLite
 
-1. **Lokálně:** zkopíruj `tilla/.env.example` → `tilla/.env` (nebo použij přiložený vývojářský `.env`; hodnoty se načtou přes `python-dotenv` při importu `app.database`).
-2. Přihlášení: **`/login`** (uživatel `admin` + `ADMIN_PASSWORD`, popř. uživatel se stejným emailem jako `OWNER_EMAIL` po doplnění hesla seedem).
-3. Stránka agenta: **`/credit-risk-agent`** — jen **`admin`**, **`superadmin`**, nebo shoda emailu s **`OWNER_EMAIL`**.
-4. API (chráněné stejně): **`POST /api/credit-risk-agent/analyse`** (JSON + `csrf_token` ze session).  
+- Nové instalace: SQLAlchemy `create_all()` vytvoří rozšířené sloupce na `credit_risk_agent_runs`.
+- Existující DB: proveďte migraci **`migrations/extend_credit_risk_agent_runs_market_standard.sql`** (záloha předem).
 
-### Credit Risk Scoring Model
+### Testy
 
-- **Soubor modelu:** `tilla/knowledge_base/credit_risk/scoring_model/invoice_financing_scoring_model_anchor_risk_FINAL.xlsx` — zkopírujte sem autoritativní workbook (viz `scoring_model/README.txt`). Volitelná env **`CREDIT_RISK_SCORING_MODEL_PATH`** přepíše cestu.
-- **Sheety použité při načtení:** **`Parametry`** (thresholdy / váhy — heuristické mapování), **`Číselníky` / `Ciselniky`** (rating → skóre, max. záloha, příplatek poplatku, gate). Ostatní listy (**Scoring**, **Historie**, **Schválení**, **Přehled**, **Návod**) slouží jako reference; přítomnost se loguje při úspěšném načtení souboru.
-- **Vstupy API/UI:** anchor + dodavatel, stav pohledávky, deal ID, částka a splatnost, spor / nesoulad dat, anchor rating, existující expozice dodavatele a anchoru, celkové portfolio, volitelný JSON historických plateb — viz formulář `/credit-risk-agent`.
-- **Výsledek:** **`model_result`** = deterministický výpočet v Pythonu (nezávislý na přepočtu Excelu za běhu). **`agent_interpretation`** = pouze vysvětlení / memo z KB + LLM; nesmí měnit skóre, brány ani limity — enforced server-side (`enforce_llm_guardrails`).
-- **Audit:** celý výstup je v **`credit_risk_agent_runs.full_output_json`** (včetně `model_result` a `agent_interpretation`); doporučené zálohy/poplatky a závěr schválení jsou vnořené v JSON.
-- **Bezpečná aktualizace parametrů:** upravte workbook ve správné složce, ověřte log startupu (načtené ratings), případně doplňte testy v `tests/test_credit_risk_scoring_model.py`, pak redeploy.
+```bash
+cd tilla && python -m compileall app && python -m unittest discover -s tests -p 'test_*.py'
+```
 
-Podrobnosti vrstvy KB: **`knowledge_base/credit_risk/scoring_model_summary.md`**.
+### Omezení modelu
 
-### Knowledge base
+Shrnuto v **`knowledge_base/credit_risk/17_model_limitations.md`** — např. self-report historického JSON, notionální portfolio součty na MVP dashboardu.
 
-Markdown soubory v adresáři **`tilla/knowledge_base/credit_risk/`** — jsou **návrh**, před produkcí schválit Risk/Legal.  
-Úpravy: editovat `.md`, commitnout, redeploy — bez vector DB (TODO v souborech).
+---
 
-### Migrace DB (existující Postgres na Renderu)
+## Legacy poznámka (invoice scoring workbook)
 
-Pro doplnění sloupce `users.password_hash` a tabulky auditu spusťte SQL soubor:
+- **Soubor modelu:** `tilla/knowledge_base/credit_risk/scoring_model/invoice_financing_scoring_model_anchor_risk_FINAL.xlsx` — viz `scoring_model/README.txt`.
+- Metodiku vs Excel viz **`04_scoring_methodology.md`**.
+
+---
+
+## Migrace DB (existující Postgres na Renderu)
+
+Pro doplnění tabulek auditu apod. použijte také historické SQL:
 
 **`migrations/create_credit_risk_agent_runs.sql`**
 
-Nové instalace: tabulky vzniknou i přes `create_all()` při startu aplikace.
+Nové rozšíření CRO v1:
+
+**`migrations/extend_credit_risk_agent_runs_market_standard.sql`**
 
 ## Licence
 

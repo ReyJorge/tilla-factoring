@@ -46,7 +46,8 @@
           </li>
           <li class="nav-item"><a class="nav-link {% if nav_active=='analysis' %}active{% endif %}" href="/analysis/debtors">Analýza</a></li>
           {% if allow_credit_risk_agent(request) %}
-          <li class="nav-item"><a class="nav-link {% if nav_active=='credit-risk-agent' %}active{% endif %}" href="/credit-risk-agent">Credit Risk Agent</a></li>
+          <li class="nav-item"><a class="nav-link {% if nav_active=='credit-risk-agent' %}active{% endif %}" href="/credit-risk-agent">Credit Risk Officer</a></li>
+          <li class="nav-item"><a class="nav-link {% if nav_active=='credit-risk-portfolio' %}active{% endif %}" href="/credit-risk-agent/portfolio">CRO Portfolio</a></li>
           {% endif %}
           <li class="nav-item"><a class="nav-link {% if nav_active=='settings' %}active{% endif %}" href="/settings/global">Nastavení</a></li>
         </ul>

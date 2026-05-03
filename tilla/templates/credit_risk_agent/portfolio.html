@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}CRO Portfolio{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0">
+  <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+  <li class="breadcrumb-item"><a href="/credit-risk-agent">Credit Risk Officer</a></li>
+  <li class="breadcrumb-item active">Portfolio</li>
+</ol></nav>
+
+<h1 class="h3 fw-semibold mb-2">Portfolio risk (audit snapshots)</h1>
+<p class="text-muted-soft small mb-4">
+  MVP agregace z tabulky <code>credit_risk_agent_runs</code> — částky jsou notionální (částka faktury ve vstupu), ne čerpání z treasury systému.
+</p>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card tilla-card"><div class="card-body small">
+      <div class="text-muted-soft">Počet běhů (vzorek)</div>
+      <div class="fs-5 fw-semibold">{{ snapshot.run_count }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card tilla-card"><div class="card-body small">
+      <div class="text-muted-soft">Součet částek faktur (sample)</div>
+      <div class="fs-5 fw-semibold">{{ snapshot.total_invoice_notional|cs_money }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card tilla-card"><div class="card-body small">
+      <div class="text-muted-soft">Průměrný advance % (model)</div>
+      <div class="fs-5 fw-semibold">{% if snapshot.average_advance_pct is not none %}{{ '%.2f'|format(snapshot.average_advance_pct) }} %{% else %}—{% endif %}</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card tilla-card mb-4"><div class="card-header">Top koncentrace (anchor / supplier)</div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm mb-0 tilla-table"><thead><tr><th>Klíč</th><th class="text-end">Částka</th></tr></thead><tbody>
+          {% for label, amt in snapshot.top_concentrations %}
+          <tr><td class="small">{{ label }}</td><td class="text-end small">{{ amt|cs_money }}</td></tr>
+          {% else %}
+          <tr><td colspan="2" class="text-muted small p-3">Žádná data.</td></tr>
+          {% endfor %}
+        </tbody></table>
+      </div></div>
+
+    <div class="card tilla-card mb-4"><div class="card-header">Distribuce risk band</div>
+      <div class="card-body small"><ul class="mb-0">
+        {% for band, cnt in snapshot.risk_band_distribution.items() %}
+        <li>{{ band }}: {{ cnt }}</li>
+        {% else %}<li class="text-muted">Žádná data.</li>{% endfor %}
+      </ul></div></div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card tilla-card mb-4"><div class="card-header">Fronta manuálního review</div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm mb-0 tilla-table"><thead><tr><th>ID</th><th>Datum</th><th>Supplier</th><th>WF</th></tr></thead><tbody>
+          {% for r in snapshot.manual_review_queue %}
+          <tr>
+            <td class="small"><a href="/credit-risk-agent/run/{{ r.id }}">{{ r.id }}</a></td>
+            <td class="small text-nowrap">{{ r.created_at.strftime('%d.%m.%Y') }}</td>
+            <td class="small">{{ r.supplier_name[:24] }}</td>
+            <td class="small">{{ r.workflow_status }}</td>
+          </tr>
+          {% else %}<tr><td colspan="4" class="text-muted small p-3">Prázdné.</td></tr>{% endfor %}
+        </tbody></table>
+      </div></div>
+
+    <div class="card tilla-card mb-4"><div class="card-header">Zamítnuté / Reject doporučení</div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm mb-0 tilla-table"><thead><tr><th>ID</th><th>Doporučení</th><th>WF</th></tr></thead><tbody>
+          {% for r in snapshot.rejected_cases %}
+          <tr>
+            <td class="small"><a href="/credit-risk-agent/run/{{ r.id }}">{{ r.id }}</a></td>
+            <td class="small">{{ r.recommendation }}</td>
+            <td class="small">{{ r.workflow_status }}</td>
+          </tr>
+          {% else %}<tr><td colspan="3" class="text-muted small p-3">Prázdné.</td></tr>{% endfor %}
+        </tbody></table>
+      </div></div>
+
+    <div class="card tilla-card"><div class="card-header">Poslední rozhodnutí</div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm mb-0 tilla-table"><thead><tr><th>ID</th><th>Supplier</th><th>Band</th><th>Can fund</th></tr></thead><tbody>
+          {% for r in snapshot.latest_decisions %}
+          <tr>
+            <td class="small"><a href="/credit-risk-agent/run/{{ r.id }}">{{ r.id }}</a></td>
+            <td class="small">{{ r.supplier_name[:24] }}</td>
+            <td class="small">{{ r.scoring_result }}</td>
+            <td class="small">{% if r.can_fund_now is none %}—{% elif r.can_fund_now %}Ano{% else %}Ne{% endif %}</td>
+          </tr>
+          {% else %}<tr><td colspan="4" class="text-muted small p-3">Žádné běhy.</td></tr>{% endfor %}
+        </tbody></table>
+      </div></div>
+  </div>
+</div>
+{% endblock %}

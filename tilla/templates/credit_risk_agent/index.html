@@ -1,61 +1,83 @@
 {% extends "base.html" %}
-{% block title %}Tilla Credit Risk Agent{% endblock %}
+{% block title %}Tilla Credit Risk Officer{% endblock %}
 {% block head_extra %}
 <meta name="csrf-token" content="{{ csrf_token }}">
 {% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0">
   <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-  <li class="breadcrumb-item active">Credit Risk Agent</li>
+  <li class="breadcrumb-item active">Credit Risk Officer</li>
 </ol></nav>
 
-<h1 class="h3 fw-semibold mb-2">Tilla Credit Risk Agent</h1>
+<h1 class="h3 fw-semibold mb-2">Tilla Credit Risk Officer v1</h1>
 <p class="text-muted-soft small mb-4">
-  Deterministické skórování podle Excel modelu (viz <code>knowledge_base/credit_risk/scoring_model/</code>) — AI jen interpretuje.
-  Rozhodnutí <strong>není závazné</strong>; schvaluje člověk.
+  Deterministické skóre z Excel parametrizace (<code>knowledge_base/credit_risk/scoring_model/</code>) + policy vrstva + volitelný AI credit memo.
+  <strong>AI není zdroj pravdy</strong> pro skóre, zálohu ani poplatek — jen vysvětlení a memo pro člověka.
 </p>
 
 <div class="row g-4">
   <div class="col-xl-8">
     <div class="card tilla-card">
-      <div class="card-header">Vstupy případu (Excel Scoring)</div>
+      <div class="card-header">1. Deal intake</div>
       <div class="card-body">
         <form id="cra-form" class="row g-3 small" onsubmit="return false;">
           <div class="col-md-6"><label class="form-label">Anchor (název)</label><input id="anchor_name" class="form-control form-control-sm" required></div>
           <div class="col-md-6"><label class="form-label">Anchor IČO</label><input id="anchor_ico" class="form-control form-control-sm" required maxlength="32"></div>
           <div class="col-md-6"><label class="form-label">Dodavatel</label><input id="supplier_name" class="form-control form-control-sm" required></div>
           <div class="col-md-6"><label class="form-label">Dodavatel IČO</label><input id="supplier_ico" class="form-control form-control-sm" required maxlength="32"></div>
-          <div class="col-md-6"><label class="form-label">Deal ID</label><input id="deal_id" class="form-control form-control-sm" placeholder="volitelně"></div>
-          <div class="col-md-6"><label class="form-label">Stav pohledávky</label><input id="receivable_status" class="form-control form-control-sm" placeholder="např. Po splatnosti"></div>
+          <div class="col-md-4"><label class="form-label">Deal ID</label><input id="deal_id" class="form-control form-control-sm" placeholder="volitelně"></div>
+          <div class="col-md-4"><label class="form-label">Číslo faktury</label><input id="invoice_number" class="form-control form-control-sm" placeholder=""></div>
+          <div class="col-md-4"><label class="form-label">Datum vystavení</label><input id="invoice_issue_date" type="date" class="form-control form-control-sm"></div>
           <div class="col-md-6"><label class="form-label">Částka faktury (CZK)</label><input id="invoice_amount" type="number" step="0.01" min="0.01" class="form-control form-control-sm" required></div>
           <div class="col-md-6"><label class="form-label">Datum splatnosti</label><input id="due_date" type="date" class="form-control form-control-sm" required></div>
           <div class="col-md-6"><label class="form-label">Anchor rating</label>
             <select id="anchor_rating" class="form-select form-select-sm">
-              <option value="">— NR / doplnit —</option>
+              <option value="">— NR —</option>
               <option value="AAA">AAA</option><option value="AA">AA</option><option value="A">A</option><option value="BBB">BBB</option>
               <option value="BB">BB</option><option value="B">B</option><option value="CCC">CCC</option><option value="NR">NR</option>
             </select>
           </div>
-          <div class="col-md-6"><label class="form-label">Požadovaná záloha % <span class="text-muted-soft">(legacy)</span></label><input id="requested_advance_pct" type="number" step="0.1" min="0" max="100" class="form-control form-control-sm" placeholder="volitelně"></div>
+          <div class="col-md-6"><label class="form-label">Požadovaná záloha %</label><input id="requested_advance_pct" type="number" step="0.1" min="0" max="100" class="form-control form-control-sm" placeholder="≤80 bez výjimky"></div>
+          <div class="col-md-6"><label class="form-label">Potvrzení anchor</label>
+            <select id="confirmation_status" class="form-select form-select-sm">
+              <option value="confirmed">confirmed</option>
+              <option value="pending">pending</option>
+              <option value="refused">refused</option>
+            </select>
+          </div>
+          <div class="col-md-6"><label class="form-label">Legal / postoupení</label>
+            <select id="legal_status" class="form-select form-select-sm">
+              <option value="ok">ok</option>
+              <option value="pending">pending</option>
+              <option value="blocked">blocked</option>
+            </select>
+          </div>
+          <div class="col-md-6"><label class="form-label">Stav pohledávky</label><input id="receivable_status" class="form-control form-control-sm" placeholder="např. dodáno / match"></div>
           <div class="col-12">
-            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="data_mismatch"><label class="form-check-label" for="data_mismatch">Nesoulad dat?</label></div>
-            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="dispute"><label class="form-check-label" for="dispute">Spor?</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="bank_account_verified" checked><label class="form-check-label" for="bank_account_verified">Účet ověřen</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="supplier_terms_accepted" checked><label class="form-check-label" for="supplier_terms_accepted">Podmínky Tilla přijaty</label></div>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="data_mismatch"><label class="form-check-label" for="data_mismatch">Nesoulad dat</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="dispute"><label class="form-check-label" for="dispute">Spor</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="fraud_suspicion"><label class="form-check-label" for="fraud_suspicion">Podezření na fraud</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="duplicate_invoice"><label class="form-check-label" for="duplicate_invoice">Duplicitní faktura</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="invoice_financed_elsewhere"><label class="form-check-label" for="invoice_financed_elsewhere">Již financováno jinde</label></div>
           </div>
           <div class="col-md-4"><label class="form-label">Expozice dodavatel (CZK)</label><input id="existing_exposure_supplier" class="form-control form-control-sm" placeholder="0"></div>
           <div class="col-md-4"><label class="form-label">Expozice anchor (CZK)</label><input id="existing_exposure_anchor" class="form-control form-control-sm" placeholder="0"></div>
           <div class="col-md-4"><label class="form-label">Portfolio celkem (CZK)</label><input id="total_portfolio_exposure" type="number" step="0.01" min="0" class="form-control form-control-sm" placeholder="0"></div>
           <div class="col-12"><label class="form-label">Historické platby (JSON pole)</label>
-            <textarea id="historical_transactions" class="form-control form-control-sm font-monospace" rows="4" placeholder='[{"invoice_amount":100000,"due_date":"2025-01-15","paid_date":"2025-01-18"}, ...]'></textarea>
-            <span class="text-muted-soft smaller">Volitelné — doplní metriky minulosti (počet uhrazených, zpoždění).</span>
+            <textarea id="historical_transactions" class="form-control form-control-sm font-monospace" rows="4" placeholder='[{"invoice_amount":100000,"due_date":"2026-01-15","paid_date":"2026-01-18"}, ...]'></textarea>
           </div>
           <hr class="my-2">
-          <div class="col-12 small text-muted-soft fw-semibold">Doplňující pole (KB / legacy)</div>
+          <div class="col-12 small text-muted-soft fw-semibold">Finanční doplněk</div>
           <div class="col-md-4"><label class="form-label">Tržby poslední rok</label><input id="revenue_latest_year" class="form-control form-control-sm"></div>
           <div class="col-md-4"><label class="form-label">EBITDA</label><input id="ebitda_latest_year" class="form-control form-control-sm"></div>
           <div class="col-md-4"><label class="form-label">Výsledek hosp.</label><input id="profit_loss_latest_year" class="form-control form-control-sm"></div>
           <div class="col-md-6"><label class="form-label">Pohledávky</label><input id="receivables" class="form-control form-control-sm"></div>
           <div class="col-md-6"><label class="form-label">Závazky</label><input id="payables" class="form-control form-control-sm"></div>
-          <div class="col-12"><label class="form-label">Informace k pohledávkám po splatnosti</label><textarea id="overdue_information" class="form-control form-control-sm" rows="2"></textarea></div>
+          <div class="col-12"><label class="form-label">Informace po splatnosti / enforcement</label><textarea id="overdue_information" class="form-control form-control-sm" rows="2"></textarea></div>
           <div class="col-md-6"><label class="form-label">Externí scoring (A–D)</label>
             <select id="scoring_result" class="form-select form-select-sm"><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
           </div>
@@ -70,46 +92,51 @@
   </div>
   <div class="col-xl-4">
     <div class="card tilla-card mb-4">
-      <div class="card-header">Poslední analýzy (vaše)</div>
+      <div class="card-header">Historie (posledních 10)</div>
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-sm mb-0 tilla-table align-middle">
-            <thead><tr><th>Datum</th><th>Supplier</th><th>Anchor</th><th class="text-end">Částka</th><th>Doporučení</th><th></th></tr></thead>
+            <thead><tr><th>Datum</th><th>Supplier</th><th>WF</th><th></th></tr></thead>
             <tbody>
               {% for h in history %}
               <tr>
-                <td class="text-nowrap small">{{ h.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
-                <td class="small">{{ h.supplier_name[:28] }}</td>
-                <td class="small">{{ h.anchor_name[:28] }}</td>
-                <td class="text-end small">{{ h.invoice_amount|cs_money }}</td>
-                <td class="small">{{ h.recommendation }}</td>
+                <td class="text-nowrap small">{{ h.created_at.strftime('%d.%m. %H:%M') }}</td>
+                <td class="small">{{ h.supplier_name[:22] }}</td>
+                <td class="small">{{ h.workflow_status or '—' }}</td>
                 <td><a class="btn btn-sm btn-outline-secondary py-0" href="/credit-risk-agent/run/{{ h.id }}">Detail</a></td>
               </tr>
               {% else %}
-              <tr><td colspan="6" class="text-muted small p-3">Zatím žádné analýzy.</td></tr>
+              <tr><td colspan="4" class="text-muted small p-3">Zatím žádné analýzy.</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
     </div>
+    <p class="small"><a href="/credit-risk-agent/portfolio">→ Portfolio pohled</a></p>
   </div>
 </div>
 
-<div id="cra-result" class="mt-4 d-none row g-3">
-  <div class="col-lg-6">
-    <div class="card tilla-card h-100">
-      <div class="card-header">Deterministické skórování (model)</div>
-      <div class="card-body small p-0"><pre id="cra-model-pre" class="small bg-light p-3 mb-0 overflow-auto" style="max-height:70vh"></pre></div>
+<div id="cra-result" class="mt-4 d-none">
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card tilla-card h-100"><div class="card-header">2. Deterministic scorecard</div>
+        <div class="card-body small" id="cra-scorecard"></div></div>
     </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="card tilla-card h-100">
-      <div class="card-header">AI interpretace / credit memo</div>
-      <div class="card-body small p-0"><pre id="cra-ai-pre" class="small bg-light p-3 mb-0 overflow-auto" style="max-height:70vh"></pre></div>
+    <div class="col-lg-6">
+      <div class="card tilla-card h-100"><div class="card-header">3. Policy checks</div>
+        <div class="card-body small" id="cra-policy"></div></div>
     </div>
+    <div class="col-lg-6">
+      <div class="card tilla-card h-100"><div class="card-header">4. AI credit memo</div>
+        <div class="card-body small" id="cra-ai"></div></div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card tilla-card h-100 border-danger-subtle"><div class="card-header">5. Final decision</div>
+        <div class="card-body small" id="cra-final"></div></div>
+    </div>
+    <div class="col-12"><p id="cra-result-foot" class="small text-muted-soft mb-0"></p></div>
   </div>
-  <div class="col-12"><p id="cra-result-foot" class="small text-muted-soft mb-0"></p></div>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -118,8 +145,6 @@
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
   const statusEl = document.getElementById('cra-status');
   const resultWrap = document.getElementById('cra-result');
-  const modelPre = document.getElementById('cra-model-pre');
-  const aiPre = document.getElementById('cra-ai-pre');
   const footEl = document.getElementById('cra-result-foot');
 
   function val(id) {
@@ -133,12 +158,70 @@
     return Number.isFinite(n) ? n : null;
   }
 
+  function ul(items, cls) {
+    if (!items || !items.length) return '<p class="text-muted mb-0">—</p>';
+    const li = items.map(x => '<li>' + String(x).replace(/</g,'&lt;') + '</li>').join('');
+    return '<ul class="mb-0 ' + (cls||'') + '">' + li + '</ul>';
+  }
+
+  function renderScorecard(mr) {
+    if (!mr || typeof mr !== 'object') return '<p class="text-muted">No model_result.</p>';
+    const rows = [
+      ['total_score', mr.total_score],
+      ['risk_band', mr.risk_band],
+      ['rating_gate', mr.rating_gate],
+      ['recommended_advance_pct', mr.recommended_advance_pct],
+      ['recommended_fee_pct', mr.recommended_fee_pct],
+      ['concentration_flag', mr.concentration_flag],
+      ['approval_level_required', mr.approval_level_required],
+      ['pricing_reason', mr.pricing_reason],
+    ];
+    let html = '<dl class="row mb-0">';
+    rows.forEach(([k,v]) => {
+      html += '<dt class="col-sm-5 text-muted-soft">' + k + '</dt><dd class="col-sm-7">' + (v!=null&&v!==''?v:'—') + '</dd>';
+    });
+    html += '</dl>';
+    html += '<div class="mt-2 fw-semibold text-muted-soft small">Hard stops (model)</div>' + ul(mr.hard_stops, 'text-danger');
+    html += '<div class="mt-2 fw-semibold text-muted-soft small">Manual triggers (model)</div>' + ul(mr.manual_review_triggers, 'text-warning');
+    html += '<div class="mt-2 fw-semibold text-muted-soft small">Missing info</div>' + ul(mr.missing_information);
+    return html;
+  }
+
+  function renderPolicy(pr) {
+    if (!pr || typeof pr !== 'object') return '<p class="text-muted">No policy_check_result.</p>';
+    let html = '<div class="mb-2"><span class="badge text-bg-secondary">final_policy_status</span> <strong>' + (pr.final_policy_status||'—') + '</strong></div>';
+    html += '<div class="fw-semibold small text-success">Hard stops</div>' + ul(pr.hard_stops, 'text-danger');
+    html += '<div class="mt-2 fw-semibold small text-warning">Manual triggers</div>' + ul(pr.manual_review_triggers);
+    html += '<div class="mt-2 fw-semibold small">Conditions before funding</div>' + ul(pr.conditions_before_funding);
+    html += '<div class="mt-2 fw-semibold small">Policy refs</div>' + ul(pr.policy_references);
+    return html;
+  }
+
+  function renderAi(ai) {
+    if (!ai || typeof ai !== 'object') return '<p class="text-muted">No memo.</p>';
+    const keys = ['executive_summary','supplier_assessment','anchor_assessment','invoice_assessment','scoring_assessment','concentration_assessment','credit_memo_summary'];
+    let html = '';
+    keys.forEach(k => { if (ai[k]) html += '<p><strong>'+k+'</strong><br>' + String(ai[k]).replace(/</g,'&lt;') + '</p>'; });
+    html += '<div class="fw-semibold small">Key risks</div>' + ul(ai.key_risks);
+    html += '<div class="mt-2 fw-semibold small">Mitigants</div>' + ul(ai.mitigants);
+    return html;
+  }
+
+  function renderFinal(fd) {
+    if (!fd || typeof fd !== 'object') return '<p class="text-muted">No final_decision.</p>';
+    const fund = fd.can_fund_now ? '<span class="text-success fw-semibold">Ano</span>' : '<span class="text-danger fw-semibold">Ne</span>';
+    let html = '<p class="mb-1"><strong>Doporučení:</strong> ' + (fd.recommendation||'—') + '</p>';
+    html += '<p class="mb-1"><strong>Can fund now:</strong> ' + fund + '</p>';
+    html += '<p class="mb-1"><strong>Human review:</strong> ' + (fd.human_review_required?'Ano':'Ne') + '</p>';
+    html += '<p class="mb-1"><strong>Approval level:</strong> ' + (fd.approval_level_required||'—') + '</p>';
+    if (fd.reason_for_human_review) html += '<p class="mb-1"><strong>Důvod review:</strong><br>' + String(fd.reason_for_human_review).replace(/</g,'&lt;') + '</p>';
+    html += '<div class="fw-semibold small mt-2">Conditions before funding</div>' + ul(fd.conditions_before_funding);
+    return html;
+  }
+
   document.getElementById('cra-submit').addEventListener('click', async () => {
     statusEl.textContent = 'Probíhá…';
     resultWrap.classList.add('d-none');
-    modelPre.textContent = '';
-    aiPre.textContent = '';
-    footEl.replaceChildren();
 
     let histParsed = null;
     const htRaw = val('historical_transactions');
@@ -155,13 +238,22 @@
       supplier_name: val('supplier_name'),
       supplier_ico: val('supplier_ico'),
       deal_id: val('deal_id') || null,
+      invoice_number: val('invoice_number') || null,
+      invoice_issue_date: val('invoice_issue_date') || null,
       receivable_status: val('receivable_status') || null,
       invoice_amount: parseFloat(val('invoice_amount')),
       due_date: val('due_date') || null,
       anchor_rating: val('anchor_rating') || null,
       requested_advance_pct: numOrNull('requested_advance_pct'),
+      confirmation_status: val('confirmation_status') || 'confirmed',
+      legal_status: val('legal_status') || 'ok',
+      bank_account_verified: document.getElementById('bank_account_verified').checked,
+      supplier_terms_accepted: document.getElementById('supplier_terms_accepted').checked,
       data_mismatch: document.getElementById('data_mismatch').checked,
       dispute: document.getElementById('dispute').checked,
+      fraud_suspicion: document.getElementById('fraud_suspicion').checked,
+      duplicate_invoice: document.getElementById('duplicate_invoice').checked,
+      invoice_financed_elsewhere: document.getElementById('invoice_financed_elsewhere').checked,
       existing_exposure_supplier: val('existing_exposure_supplier') || null,
       existing_exposure_anchor: val('existing_exposure_anchor') || null,
       total_portfolio_exposure: numOrNull('total_portfolio_exposure'),
@@ -191,14 +283,17 @@
         return;
       }
       statusEl.textContent = 'Hotovo · run #' + data.run_id;
-      modelPre.textContent = JSON.stringify(data.result.model_result || {}, null, 2);
-      aiPre.textContent = JSON.stringify(data.result.agent_interpretation || {}, null, 2);
+      document.getElementById('cra-scorecard').innerHTML = renderScorecard(data.model_result);
+      document.getElementById('cra-policy').innerHTML = renderPolicy(data.policy_check_result);
+      document.getElementById('cra-ai').innerHTML = renderAi(data.agent_interpretation);
+      document.getElementById('cra-final').innerHTML = renderFinal(data.final_decision);
+      footEl.replaceChildren();
       footEl.appendChild(document.createTextNode('Uloženo — '));
       const a = document.createElement('a');
       a.href = '/credit-risk-agent/run/' + data.run_id;
       a.textContent = 'Auditní detail';
       footEl.appendChild(a);
-      footEl.appendChild(document.createTextNode(' · Celý JSON včetně _precheck_legacy.'));
+      footEl.appendChild(document.createTextNode(' · KB ' + (data.kb_version||'') + ' · model ' + (data.model_version||'')));
       resultWrap.classList.remove('d-none');
       window.location.hash = 'cra-result';
     } catch (e) {

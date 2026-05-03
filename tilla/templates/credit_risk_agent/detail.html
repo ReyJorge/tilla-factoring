@@ -1,66 +1,151 @@
 {% extends "base.html" %}
 {% block title %}Credit Risk Run #{{ run.id }}{% endblock %}
+{% block head_extra %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3"><ol class="breadcrumb tilla-breadcrumb mb-0">
-  <li class="breadcrumb-item"><a href="/credit-risk-agent">Credit Risk Agent</a></li>
+  <li class="breadcrumb-item"><a href="/credit-risk-agent">Credit Risk Officer</a></li>
   <li class="breadcrumb-item active">Run #{{ run.id }}</li>
 </ol></nav>
 
 {% set out = run.full_output_json %}
 {% set mr = out['model_result'] if out is mapping and 'model_result' in out else {} %}
+{% set pr = out['policy_check_result'] if out is mapping and 'policy_check_result' in out else {} %}
 {% set ai = out['agent_interpretation'] if out is mapping and 'agent_interpretation' in out else {} %}
+{% set fd = out['final_decision'] if out is mapping and 'final_decision' in out else {} %}
 
 <div class="card tilla-card mb-4">
   <div class="card-header">Shrnutí auditu</div>
   <div class="card-body small row g-3">
     <div class="col-md-4"><span class="text-muted-soft">Vytvořeno</span><br><strong>{{ run.created_at.strftime('%d.%m.%Y %H:%M') }}</strong></div>
-    <div class="col-md-4"><span class="text-muted-soft">Finální doporučení (UI)</span><br><strong>{{ run.recommendation }}</strong></div>
-    <div class="col-md-4"><span class="text-muted-soft">Confidence (AI vrstva)</span><br><strong>{{ run.confidence_level }}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">Workflow</span><br><strong>{{ run.workflow_status }}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">Policy status</span><br><strong>{{ run.policy_status or pr.final_policy_status or '—' }}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">Finální doporučení</span><br><strong>{{ fd.recommendation if fd else run.recommendation }}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">Can fund now</span><br><strong>{% if run.can_fund_now is none %}—{% elif run.can_fund_now %}Ano{% else %}Ne{% endif %}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">KB / model verze</span><br>{{ run.kb_version or out.kb_version or '—' }} · {{ run.model_version or out.model_version or '—' }}</div>
     <div class="col-md-6"><span class="text-muted-soft">Supplier</span><br>{{ run.supplier_name }} <span class="text-muted-soft">· IČ {{ run.supplier_ico }}</span></div>
     <div class="col-md-6"><span class="text-muted-soft">Anchor</span><br>{{ run.anchor_name }} <span class="text-muted-soft">· IČ {{ run.anchor_ico }}</span></div>
     <div class="col-md-4"><span class="text-muted-soft">Částka faktury</span><br>{{ run.invoice_amount|cs_money }}</div>
-    <div class="col-md-4"><span class="text-muted-soft">Risk band (model)</span><br>{{ run.scoring_result }}</div>
+    {% if run.workflow_note %}<div class="col-12"><span class="text-muted-soft">Poznámka schvalovatele</span><br>{{ run.workflow_note }}</div>{% endif %}
     {% if mr %}
     <div class="col-md-4"><span class="text-muted-soft">Total score</span><br><strong>{{ mr.total_score }}</strong></div>
     <div class="col-md-4"><span class="text-muted-soft">Rating gate</span><br>{{ mr.rating_gate }}</div>
-    <div class="col-md-4"><span class="text-muted-soft">Advance % (model)</span><br>{{ mr.recommended_advance_pct }}</div>
-    <div class="col-md-4"><span class="text-muted-soft">Fee % (model)</span><br>{{ mr.recommended_fee_pct }}</div>
-    <div class="col-12"><span class="text-muted-soft">Závěr schválení (model)</span><br>{{ mr.approval_conclusion }}</div>
+    <div class="col-md-4"><span class="text-muted-soft">Advance %</span><br>{{ mr.recommended_advance_pct }}</div>
     {% endif %}
   </div>
 </div>
 
-<div class="row g-3 mb-3">
-  <div class="col-lg-6">
-    <div class="card tilla-card h-100"><div class="card-header">Deterministický výstup</div>
-      <div class="card-body small p-0"><pre class="small bg-light p-3 mb-0 overflow-auto" style="max-height:380px">{{ mr | pretty_json }}</pre></div>
-    </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="card tilla-card h-100"><div class="card-header">AI interpretace</div>
-      <div class="card-body small p-0"><pre class="small bg-light p-3 mb-0 overflow-auto" style="max-height:380px">{{ ai | pretty_json }}</pre></div>
-    </div>
-  </div>
-</div>
+{% if fd %}
+<div class="card tilla-card mb-3"><div class="card-header">Final decision</div><div class="card-body small">
+  <dl class="row mb-0">
+    {% for key in ['recommendation','human_review_required','approval_level_required','reason_for_human_review'] %}
+      {% if key in fd %}
+      <dt class="col-sm-4 text-muted-soft">{{ key }}</dt><dd class="col-sm-8">{{ fd[key] }}</dd>
+      {% endif %}
+    {% endfor %}
+  </dl>
+  {% if fd.conditions_before_funding %}<div class="fw-semibold mt-2">Conditions before funding</div><ul class="mb-0">{% for x in fd.conditions_before_funding %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+</div></div>
+{% endif %}
+
+{% if pr %}
+<div class="card tilla-card mb-3"><div class="card-header">Policy checks</div><div class="card-body small">
+  <p><strong>final_policy_status:</strong> {{ pr.final_policy_status }}</p>
+  {% if pr.hard_stops %}<div class="text-danger fw-semibold small">Hard stops</div><ul>{% for x in pr.hard_stops %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+  {% if pr.manual_review_triggers %}<div class="text-warning fw-semibold small">Manual triggers</div><ul>{% for x in pr.manual_review_triggers %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+</div></div>
+{% endif %}
 
 {% if ai %}
-<div class="card tilla-card mb-3"><div class="card-header">Shrnutí interpretace</div><div class="card-body small">
+<div class="card tilla-card mb-3"><div class="card-header">AI credit memo</div><div class="card-body small">
+  {% if ai.executive_summary %}<p>{{ ai.executive_summary }}</p>{% endif %}
   <dl class="row mb-0">
-    {% for key in ['recommendation','risk_grade','confidence_level','credit_memo_summary'] %}
-      {% if key in ai %}
-      <dt class="col-sm-4 text-muted-soft">{{ key }}</dt><dd class="col-sm-8">{{ ai[key] }}</dd>
-      {% endif %}
+    {% for key in ['credit_memo_summary','confidence_level'] %}
+      {% if key in ai %}<dt class="col-sm-4 text-muted-soft">{{ key }}</dt><dd class="col-sm-8">{{ ai[key] }}</dd>{% endif %}
     {% endfor %}
   </dl>
 </div></div>
 {% endif %}
 
-{% if ai.key_risks %}<div class="card tilla-card mb-3"><div class="card-header">Key risks</div><div class="card-body small"><ul class="mb-0">{% for x in ai.key_risks %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
-{% if ai.mitigants %}<div class="card tilla-card mb-3"><div class="card-header">Mitigants</div><div class="card-body small"><ul class="mb-0">{% for x in ai.mitigants %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
-{% if ai.missing_information %}<div class="card tilla-card mb-3"><div class="card-header">Missing information</div><div class="card-body small"><ul class="mb-0">{% for x in ai.missing_information %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
-{% if ai.conditions_before_funding %}<div class="card tilla-card mb-3"><div class="card-header">Conditions before funding</div><div class="card-body small"><ul class="mb-0">{% for x in ai.conditions_before_funding %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+<div class="card tilla-card mb-4"><div class="card-header">Workflow (admin)</div><div class="card-body small">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label mb-0">Status</label>
+      <select id="wf-status" class="form-select form-select-sm">
+        <option value="Draft">Draft</option>
+        <option value="Recommended approve">Recommended approve</option>
+        <option value="Conditional approve">Conditional approve</option>
+        <option value="Human review required">Human review required</option>
+        <option value="Approved by human">Approved by human</option>
+        <option value="Rejected by human">Rejected by human</option>
+        <option value="Funded">Funded</option>
+        <option value="Settled">Settled</option>
+      </select>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label mb-0">Poznámka</label>
+      <input id="wf-note" class="form-control form-control-sm" placeholder="Volitelná poznámka schvalovatele">
+    </div>
+    <div class="col-md-2">
+      <button type="button" id="wf-save" class="btn btn-sm btn-inst-primary">Uložit</button>
+    </div>
+  </div>
+  <p id="wf-msg" class="small text-muted-soft mb-0 mt-2"></p>
+</div></div>
 
-<details class="small text-muted-soft"><summary>Raw JSON (audit)</summary>
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card tilla-card h-100"><div class="card-header">model_result</div>
+      <div class="card-body small p-0"><pre class="small bg-light p-3 mb-0 overflow-auto" style="max-height:380px">{{ mr | pretty_json }}</pre></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card tilla-card h-100"><div class="card-header">agent_interpretation</div>
+      <div class="card-body small p-0"><pre class="small bg-light p-3 mb-0 overflow-auto" style="max-height:380px">{{ ai | pretty_json }}</pre></div>
+    </div>
+  </div>
+</div>
+
+<details class="small text-muted-soft"><summary>Raw audit JSON</summary>
 <pre class="small bg-light p-3 mt-2 overflow-auto" style="max-height:320px">{{ run.full_output_json | pretty_json }}</pre>
 </details>
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+  const runId = {{ run.id }};
+  const sel = document.getElementById('wf-status');
+  const cur = "{{ run.workflow_status|default('Draft')|e }}";
+  if (sel && cur) {
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === cur) { sel.selectedIndex = i; break; }
+    }
+  }
+  document.getElementById('wf-save').addEventListener('click', async () => {
+    const msg = document.getElementById('wf-msg');
+    msg.textContent = 'Ukládám…';
+    try {
+      const r = await fetch('/api/credit-risk-agent/run/' + runId + '/workflow', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          workflow_status: document.getElementById('wf-status').value,
+          workflow_note: document.getElementById('wf-note').value || null,
+        }),
+      });
+      const data = await r.json();
+      if (!data.ok) {
+        msg.textContent = data.error || JSON.stringify(data);
+        return;
+      }
+      msg.textContent = 'Uloženo.';
+      location.reload();
+    } catch (e) {
+      msg.textContent = 'Chyba spojení';
+    }
+  });
+})();
+</script>
 {% endblock %}
