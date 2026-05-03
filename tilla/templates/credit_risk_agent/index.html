@@ -14,6 +14,7 @@
   Deterministické skóre z Excel parametrizace (<code>knowledge_base/credit_risk/scoring_model/</code>) + policy vrstva + volitelný AI credit memo.
   <strong>AI není zdroj pravdy</strong> pro skóre, zálohu ani poplatek — jen vysvětlení a memo pro člověka.
   Formulář je <strong>předvyplněný ukázkovými údaji</strong> (datumy a JSON historie se dopočítají při načtení stránky); tlačítkem „Obnovit demo údaje“ je vrátíš po úpravách.
+  Po analýze v scorecard sleduj <code>model_params_source</code>: název <code>.xlsx</code> = parametry z workbooku, <code>embedded_defaults</code> = soubor na serveru chybí nebo se nepodařil načíst.
 </p>
 
 <div class="row g-4">
@@ -271,6 +272,8 @@
   function renderScorecard(mr) {
     if (!mr || typeof mr !== 'object') return '<p class="text-muted">No model_result.</p>';
     const rows = [
+      ['model_params_source', mr.model_params_source],
+      ['model_version', mr.model_version],
       ['total_score', mr.total_score],
       ['risk_band', mr.risk_band],
       ['rating_gate', mr.rating_gate],

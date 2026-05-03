@@ -417,6 +417,7 @@ def analyse_credit_risk_fatal_fallback(payload: CreditRiskAnalyseIn, error: str)
         "pricing_reason": "",
         "approval_level_required": "Credit Committee",
         "concentration_flag": "RED FLAG",
+        "model_params_source": "scoring_engine_error",
         "error": error[:2000],
     }
     policy_result = run_policy_checks(inp, model_result)

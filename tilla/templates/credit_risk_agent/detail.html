@@ -24,6 +24,7 @@
     <div class="col-md-4"><span class="text-muted-soft">Finální doporučení</span><br><strong>{{ fd.recommendation if fd else run.recommendation }}</strong></div>
     <div class="col-md-4"><span class="text-muted-soft">Can fund now</span><br><strong>{% if run.can_fund_now is none %}—{% elif run.can_fund_now %}Ano{% else %}Ne{% endif %}</strong></div>
     <div class="col-md-4"><span class="text-muted-soft">KB / model verze</span><br>{{ run.kb_version or out.kb_version or '—' }} · {{ run.model_version or out.model_version or '—' }}</div>
+    {% if mr %}<div class="col-md-8"><span class="text-muted-soft">Zdroj parametrů skóre</span><br><code class="small">{{ mr.model_params_source or '—' }}</code> <span class="text-muted-soft">(<code>embedded_defaults</code> = workbook na serveru nenačten)</span></div>{% endif %}
     <div class="col-md-6"><span class="text-muted-soft">Supplier</span><br>{{ run.supplier_name }} <span class="text-muted-soft">· IČ {{ run.supplier_ico }}</span></div>
     <div class="col-md-6"><span class="text-muted-soft">Anchor</span><br>{{ run.anchor_name }} <span class="text-muted-soft">· IČ {{ run.anchor_ico }}</span></div>
     <div class="col-md-4"><span class="text-muted-soft">Částka faktury</span><br>{{ run.invoice_amount|cs_money }}</div>
