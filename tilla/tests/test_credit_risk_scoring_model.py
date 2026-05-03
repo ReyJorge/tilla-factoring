@@ -6,7 +6,7 @@ import unittest
 from datetime import date, timedelta
 
 from app.services import credit_risk_agent_service as cra
-from app.services.credit_risk_excel_model import DealInputs, ParsedParams, compute_deal_scoring, load_workbook_structures
+from app.services.credit_risk_excel_model import DealInputs, ParsedParams, compute_deal_scoring, load_model_bundle, load_workbook_structures, clear_model_bundle_cache, resolve_model_workbook_path
 
 
 def _hist_ok(n: int = 6) -> list[dict]:
@@ -136,6 +136,26 @@ class TestWorkbookFallback(unittest.TestCase):
         params, catalog = load_workbook_structures(__file__)  # not an xlsx → defaults
         self.assertIsInstance(params, ParsedParams)
         self.assertIn("AAA", catalog)
+
+
+class TestLoadModelBundle(unittest.TestCase):
+    def test_bundle_is_tuple_pair(self):
+        clear_model_bundle_cache()
+        bundle = load_model_bundle()
+        self.assertIsInstance(bundle, tuple)
+        self.assertEqual(len(bundle), 2)
+        params, catalog = bundle
+        self.assertIsInstance(params, ParsedParams)
+        self.assertIsInstance(catalog, dict)
+
+    def test_xlsx_load_returns_catalog_when_file_present(self):
+        path = resolve_model_workbook_path()
+        if not path.is_file():
+            self.skipTest("scoring xlsx not present in workspace")
+        clear_model_bundle_cache()
+        params, catalog = load_workbook_structures(path)
+        self.assertIsInstance(params, ParsedParams)
+        self.assertGreater(len(catalog), 0)
 
 
 if __name__ == "__main__":

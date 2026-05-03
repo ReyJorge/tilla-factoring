@@ -276,7 +276,14 @@
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await r.json();
+      const raw = await r.text();
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch (parseErr) {
+        statusEl.textContent = 'Chyba serveru (HTTP ' + r.status + ') — neplatná JSON odpověď.';
+        return;
+      }
       if (!data.ok) {
         const err = data.error;
         statusEl.textContent = 'Chyba: ' + (typeof err === 'string' ? err : JSON.stringify(err));
@@ -297,7 +304,7 @@
       resultWrap.classList.remove('d-none');
       window.location.hash = 'cra-result';
     } catch (e) {
-      statusEl.textContent = 'Chyba spojení';
+      statusEl.textContent = 'Chyba spojení (síť / timeout). Zkus znovu; pokud přetrvává, zkontroluj Render logy.';
     }
   });
 })();

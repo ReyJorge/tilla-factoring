@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 KB_ROOT = BASE_DIR / "knowledge_base" / "credit_risk"
 KB_VERSION = "cro-kb-v1"
 
+_KB_TEXT_CACHE: str | None = None
+
 WORKFLOW_STATUSES = frozenset(
     {
         "Draft",
@@ -90,9 +92,14 @@ Reference numeric totals using model_result.total_score, model_result.recommende
 
 
 def load_knowledge_base_text() -> str:
+    """Read numbered KB files once per worker — keeps analyse latency low on Render."""
+    global _KB_TEXT_CACHE
+    if _KB_TEXT_CACHE is not None:
+        return _KB_TEXT_CACHE
     if not KB_ROOT.is_dir():
         logger.warning("Knowledge base folder missing: %s", KB_ROOT)
-        return "(Knowledge base folder missing — human review required.)"
+        _KB_TEXT_CACHE = "(Knowledge base folder missing — human review required.)"
+        return _KB_TEXT_CACHE
     paths = sorted(KB_ROOT.glob("[0-9][0-9]_*.md"))
     if not paths:
         paths = sorted(KB_ROOT.glob("*.md"))
@@ -104,7 +111,8 @@ def load_knowledge_base_text() -> str:
             chunks.append(f"--- FILE: {rel.as_posix()} ---\n{path.read_text(encoding='utf-8')}")
         except OSError as e:
             logger.warning("KB read failed %s: %s", path, e)
-    return "\n\n".join(chunks) if chunks else "(No numbered KB markdown files — human review required.)"
+    _KB_TEXT_CACHE = "\n\n".join(chunks) if chunks else "(No numbered KB markdown files — human review required.)"
+    return _KB_TEXT_CACHE
 
 
 def build_input_summary(inp: CreditRiskInput) -> dict[str, Any]:

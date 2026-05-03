@@ -280,6 +280,7 @@ def load_workbook_structures(path: Path | str) -> tuple[ParsedParams, dict[str, 
         sorted(catalog.keys()),
         _reference_sheet_presence(list(wb.sheetnames)),
     )
+    return params, catalog
 
 
 @dataclass
@@ -568,6 +569,19 @@ def compute_deal_scoring(
     return out
 
 
+_MODEL_BUNDLE_CACHE: tuple[ParsedParams, dict[str, RatingRow]] | None = None
+
+
 def load_model_bundle() -> tuple[ParsedParams, dict[str, RatingRow]]:
-    path = resolve_model_workbook_path()
-    return load_workbook_structures(path)
+    """Parse workbook once per process — avoids repeated openpyxl IO on each analyse request."""
+    global _MODEL_BUNDLE_CACHE
+    if _MODEL_BUNDLE_CACHE is None:
+        path = resolve_model_workbook_path()
+        _MODEL_BUNDLE_CACHE = load_workbook_structures(path)
+    return _MODEL_BUNDLE_CACHE
+
+
+def clear_model_bundle_cache() -> None:
+    """Tests / workbook hot-reload."""
+    global _MODEL_BUNDLE_CACHE
+    _MODEL_BUNDLE_CACHE = None
