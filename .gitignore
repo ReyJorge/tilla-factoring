@@ -12,6 +12,7 @@ __pycache__/
 
 # Lokální podklady / screenshoty (nepatří do deploy repozitáře)
 *.xlsx
+!tilla/knowledge_base/credit_risk/scoring_model/invoice_financing_scoring_model_anchor_risk_FINAL.xlsx
 *.png
 !tilla/static/brand/*.png
 
