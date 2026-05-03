@@ -121,13 +121,25 @@ Interní nástroj **`/credit-risk-agent`** — doporučení úvěrového rizika 
 | **`DEBUG`** | `1` = logovat více detailů požadavků (citlivá data — jen vývoj). |
 | **`CREDIT_RISK_SUPPLIER_CAP_CZK`** | Volitelný číselný strop pro rule pre-check (faktura / kombinovaná expozice). |
 | **`CREDIT_RISK_ANCHOR_CAP_CZK`** | Totéž pro anchor. |
+| **`CREDIT_RISK_SCORING_MODEL_PATH`** | Absolutní cesta k `.xlsx` scoring modelu (jinak výchozí soubor ve `knowledge_base/credit_risk/scoring_model/`). |
 
 ### Přístup
 
 1. **Lokálně:** zkopíruj `tilla/.env.example` → `tilla/.env` (nebo použij přiložený vývojářský `.env`; hodnoty se načtou přes `python-dotenv` při importu `app.database`).
-2. Přihlášení: **`/login`** (uživatel `admin` + `ADMIN_PASSWORD`, popř. uživatel se stejným emailem jako `OWNER_EMAIL` po doplnění hesla seedem).  
-2. Stránka agenta: **`/credit-risk-agent`** — jen **`admin`**, **`superadmin`**, nebo shoda emailu s **`OWNER_EMAIL`**.  
-3. API (chráněné stejně): **`POST /api/credit-risk-agent/analyse`** (JSON + `csrf_token` ze session).  
+2. Přihlášení: **`/login`** (uživatel `admin` + `ADMIN_PASSWORD`, popř. uživatel se stejným emailem jako `OWNER_EMAIL` po doplnění hesla seedem).
+3. Stránka agenta: **`/credit-risk-agent`** — jen **`admin`**, **`superadmin`**, nebo shoda emailu s **`OWNER_EMAIL`**.
+4. API (chráněné stejně): **`POST /api/credit-risk-agent/analyse`** (JSON + `csrf_token` ze session).  
+
+### Credit Risk Scoring Model
+
+- **Soubor modelu:** `tilla/knowledge_base/credit_risk/scoring_model/invoice_financing_scoring_model_anchor_risk_FINAL.xlsx` — zkopírujte sem autoritativní workbook (viz `scoring_model/README.txt`). Volitelná env **`CREDIT_RISK_SCORING_MODEL_PATH`** přepíše cestu.
+- **Sheety použité při načtení:** **`Parametry`** (thresholdy / váhy — heuristické mapování), **`Číselníky` / `Ciselniky`** (rating → skóre, max. záloha, příplatek poplatku, gate). Ostatní listy (**Scoring**, **Historie**, **Schválení**, **Přehled**, **Návod**) slouží jako reference; přítomnost se loguje při úspěšném načtení souboru.
+- **Vstupy API/UI:** anchor + dodavatel, stav pohledávky, deal ID, částka a splatnost, spor / nesoulad dat, anchor rating, existující expozice dodavatele a anchoru, celkové portfolio, volitelný JSON historických plateb — viz formulář `/credit-risk-agent`.
+- **Výsledek:** **`model_result`** = deterministický výpočet v Pythonu (nezávislý na přepočtu Excelu za běhu). **`agent_interpretation`** = pouze vysvětlení / memo z KB + LLM; nesmí měnit skóre, brány ani limity — enforced server-side (`enforce_llm_guardrails`).
+- **Audit:** celý výstup je v **`credit_risk_agent_runs.full_output_json`** (včetně `model_result` a `agent_interpretation`); doporučené zálohy/poplatky a závěr schválení jsou vnořené v JSON.
+- **Bezpečná aktualizace parametrů:** upravte workbook ve správné složce, ověřte log startupu (načtené ratings), případně doplňte testy v `tests/test_credit_risk_scoring_model.py`, pak redeploy.
+
+Podrobnosti vrstvy KB: **`knowledge_base/credit_risk/scoring_model_summary.md`**.
 
 ### Knowledge base
 

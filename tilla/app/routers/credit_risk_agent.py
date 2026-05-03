@@ -125,12 +125,12 @@ async def credit_risk_analyse(request: Request, db: Session = Depends(get_db)):
 
     debug_financial = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
     logger.info(
-        "credit_risk_analyse user_id=%s supplier=%s anchor=%s invoice=%s scoring=%s",
+        "credit_risk_analyse user_id=%s supplier=%s anchor=%s invoice=%s anchor_rating=%s",
         user.id,
         payload.supplier_name[:120],
         payload.anchor_name[:120],
         payload.invoice_amount,
-        payload.scoring_result,
+        (payload.anchor_rating or "")[:12],
     )
     if debug_financial:
         logger.debug("credit_risk_analyse full_body_keys=%s", list(body.keys()))
@@ -147,8 +147,11 @@ async def credit_risk_analyse(request: Request, db: Session = Depends(get_db)):
         logger.exception("credit_risk fatal")
         return JSONResponse(status_code=500, content={"ok": False, "error": str(exc)})
 
-    rec = str(out.get("recommendation", "Human review required"))[:80]
-    conf = str(out.get("confidence_level", "Low"))[:40]
+    mr = out.get("model_result") or {}
+    ai = out.get("agent_interpretation") or {}
+    rec = cra_svc.final_recommendation_display(out)[:80]
+    conf = str(ai.get("confidence_level", "Low"))[:40]
+    risk_band = str(mr.get("risk_band") or payload.scoring_result or "-")[:8]
 
     run = CreditRiskAgentRun(
         user_id=user.id,
@@ -157,7 +160,7 @@ async def credit_risk_analyse(request: Request, db: Session = Depends(get_db)):
         anchor_name=payload.anchor_name,
         anchor_ico=payload.anchor_ico,
         invoice_amount=payload.invoice_amount,
-        scoring_result=payload.scoring_result,
+        scoring_result=risk_band,
         recommendation=rec,
         confidence_level=conf,
         full_input_json=inp_storage,

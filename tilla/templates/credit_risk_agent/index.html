@@ -11,45 +11,64 @@
 
 <h1 class="h3 fw-semibold mb-2">Tilla Credit Risk Agent</h1>
 <p class="text-muted-soft small mb-4">
-  Draft MVP — doporučení není právně závazné. Agent nesmí nahradit lidské schvalování.
-  KB: <code>knowledge_base/credit_risk/</code>.
+  Deterministické skórování podle Excel modelu (viz <code>knowledge_base/credit_risk/scoring_model/</code>) — AI jen interpretuje.
+  Rozhodnutí <strong>není závazné</strong>; schvaluje člověk.
 </p>
 
 <div class="row g-4">
-  <div class="col-xl-7">
+  <div class="col-xl-8">
     <div class="card tilla-card">
-      <div class="card-header">Vstupy obchodního případu</div>
+      <div class="card-header">Vstupy případu (Excel Scoring)</div>
       <div class="card-body">
         <form id="cra-form" class="row g-3 small" onsubmit="return false;">
-          <div class="col-md-6"><label class="form-label">Supplier name</label><input id="supplier_name" class="form-control form-control-sm" required></div>
-          <div class="col-md-6"><label class="form-label">Supplier ICO</label><input id="supplier_ico" class="form-control form-control-sm" required maxlength="32"></div>
-          <div class="col-md-6"><label class="form-label">Anchor name</label><input id="anchor_name" class="form-control form-control-sm" required></div>
-          <div class="col-md-6"><label class="form-label">Anchor ICO</label><input id="anchor_ico" class="form-control form-control-sm" required maxlength="32"></div>
-          <div class="col-md-6"><label class="form-label">Invoice amount (CZK)</label><input id="invoice_amount" type="number" step="0.01" min="0.01" class="form-control form-control-sm" required></div>
-          <div class="col-md-6"><label class="form-label">Requested advance %</label><input id="requested_advance_pct" type="number" step="0.1" min="0" max="100" class="form-control form-control-sm" required></div>
-          <div class="col-md-4"><label class="form-label">Revenue latest year</label><input id="revenue_latest_year" class="form-control form-control-sm" placeholder="např. 12 500 000"></div>
-          <div class="col-md-4"><label class="form-label">EBITDA latest year</label><input id="ebitda_latest_year" class="form-control form-control-sm"></div>
-          <div class="col-md-4"><label class="form-label">Profit/loss latest year</label><input id="profit_loss_latest_year" class="form-control form-control-sm"></div>
-          <div class="col-md-6"><label class="form-label">Receivables</label><input id="receivables" class="form-control form-control-sm"></div>
-          <div class="col-md-6"><label class="form-label">Payables</label><input id="payables" class="form-control form-control-sm"></div>
-          <div class="col-12"><label class="form-label">Overdue information</label><textarea id="overdue_information" class="form-control form-control-sm" rows="2"></textarea></div>
-          <div class="col-md-6"><label class="form-label">Existing exposure — supplier</label><input id="existing_exposure_supplier" class="form-control form-control-sm"></div>
-          <div class="col-md-6"><label class="form-label">Existing exposure — anchor</label><input id="existing_exposure_anchor" class="form-control form-control-sm"></div>
-          <div class="col-md-6"><label class="form-label">Scoring result</label>
-            <select id="scoring_result" class="form-select form-select-sm" required>
-              <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+          <div class="col-md-6"><label class="form-label">Anchor (název)</label><input id="anchor_name" class="form-control form-control-sm" required></div>
+          <div class="col-md-6"><label class="form-label">Anchor IČO</label><input id="anchor_ico" class="form-control form-control-sm" required maxlength="32"></div>
+          <div class="col-md-6"><label class="form-label">Dodavatel</label><input id="supplier_name" class="form-control form-control-sm" required></div>
+          <div class="col-md-6"><label class="form-label">Dodavatel IČO</label><input id="supplier_ico" class="form-control form-control-sm" required maxlength="32"></div>
+          <div class="col-md-6"><label class="form-label">Deal ID</label><input id="deal_id" class="form-control form-control-sm" placeholder="volitelně"></div>
+          <div class="col-md-6"><label class="form-label">Stav pohledávky</label><input id="receivable_status" class="form-control form-control-sm" placeholder="např. Po splatnosti"></div>
+          <div class="col-md-6"><label class="form-label">Částka faktury (CZK)</label><input id="invoice_amount" type="number" step="0.01" min="0.01" class="form-control form-control-sm" required></div>
+          <div class="col-md-6"><label class="form-label">Datum splatnosti</label><input id="due_date" type="date" class="form-control form-control-sm" required></div>
+          <div class="col-md-6"><label class="form-label">Anchor rating</label>
+            <select id="anchor_rating" class="form-select form-select-sm">
+              <option value="">— NR / doplnit —</option>
+              <option value="AAA">AAA</option><option value="AA">AA</option><option value="A">A</option><option value="BBB">BBB</option>
+              <option value="BB">BB</option><option value="B">B</option><option value="CCC">CCC</option><option value="NR">NR</option>
             </select>
           </div>
-          <div class="col-12"><label class="form-label">Free text notes</label><textarea id="notes" class="form-control form-control-sm" rows="3"></textarea></div>
+          <div class="col-md-6"><label class="form-label">Požadovaná záloha % <span class="text-muted-soft">(legacy)</span></label><input id="requested_advance_pct" type="number" step="0.1" min="0" max="100" class="form-control form-control-sm" placeholder="volitelně"></div>
           <div class="col-12">
-            <button type="button" id="cra-submit" class="btn btn-inst-primary btn-sm">Generate credit recommendation</button>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="data_mismatch"><label class="form-check-label" for="data_mismatch">Nesoulad dat?</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="dispute"><label class="form-check-label" for="dispute">Spor?</label></div>
+          </div>
+          <div class="col-md-4"><label class="form-label">Expozice dodavatel (CZK)</label><input id="existing_exposure_supplier" class="form-control form-control-sm" placeholder="0"></div>
+          <div class="col-md-4"><label class="form-label">Expozice anchor (CZK)</label><input id="existing_exposure_anchor" class="form-control form-control-sm" placeholder="0"></div>
+          <div class="col-md-4"><label class="form-label">Portfolio celkem (CZK)</label><input id="total_portfolio_exposure" type="number" step="0.01" min="0" class="form-control form-control-sm" placeholder="0"></div>
+          <div class="col-12"><label class="form-label">Historické platby (JSON pole)</label>
+            <textarea id="historical_transactions" class="form-control form-control-sm font-monospace" rows="4" placeholder='[{"invoice_amount":100000,"due_date":"2025-01-15","paid_date":"2025-01-18"}, ...]'></textarea>
+            <span class="text-muted-soft smaller">Volitelné — doplní metriky minulosti (počet uhrazených, zpoždění).</span>
+          </div>
+          <hr class="my-2">
+          <div class="col-12 small text-muted-soft fw-semibold">Doplňující pole (KB / legacy)</div>
+          <div class="col-md-4"><label class="form-label">Tržby poslední rok</label><input id="revenue_latest_year" class="form-control form-control-sm"></div>
+          <div class="col-md-4"><label class="form-label">EBITDA</label><input id="ebitda_latest_year" class="form-control form-control-sm"></div>
+          <div class="col-md-4"><label class="form-label">Výsledek hosp.</label><input id="profit_loss_latest_year" class="form-control form-control-sm"></div>
+          <div class="col-md-6"><label class="form-label">Pohledávky</label><input id="receivables" class="form-control form-control-sm"></div>
+          <div class="col-md-6"><label class="form-label">Závazky</label><input id="payables" class="form-control form-control-sm"></div>
+          <div class="col-12"><label class="form-label">Informace k pohledávkám po splatnosti</label><textarea id="overdue_information" class="form-control form-control-sm" rows="2"></textarea></div>
+          <div class="col-md-6"><label class="form-label">Externí scoring (A–D)</label>
+            <select id="scoring_result" class="form-select form-select-sm"><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+          </div>
+          <div class="col-12"><label class="form-label">Poznámky</label><textarea id="notes" class="form-control form-control-sm" rows="2"></textarea></div>
+          <div class="col-12">
+            <button type="button" id="cra-submit" class="btn btn-inst-primary btn-sm">Spustit analýzu</button>
             <span id="cra-status" class="small text-muted-soft ms-2"></span>
           </div>
         </form>
       </div>
     </div>
   </div>
-  <div class="col-xl-5">
+  <div class="col-xl-4">
     <div class="card tilla-card mb-4">
       <div class="card-header">Poslední analýzy (vaše)</div>
       <div class="card-body p-0">
@@ -77,8 +96,20 @@
   </div>
 </div>
 
-<div id="cra-result" class="mt-4 d-none">
-  <div class="card tilla-card"><div class="card-header">Výstup agenta</div><div class="card-body small" id="cra-result-body"></div></div>
+<div id="cra-result" class="mt-4 d-none row g-3">
+  <div class="col-lg-6">
+    <div class="card tilla-card h-100">
+      <div class="card-header">Deterministické skórování (model)</div>
+      <div class="card-body small p-0"><pre id="cra-model-pre" class="small bg-light p-3 mb-0 overflow-auto" style="max-height:70vh"></pre></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card tilla-card h-100">
+      <div class="card-header">AI interpretace / credit memo</div>
+      <div class="card-body small p-0"><pre id="cra-ai-pre" class="small bg-light p-3 mb-0 overflow-auto" style="max-height:70vh"></pre></div>
+    </div>
+  </div>
+  <div class="col-12"><p id="cra-result-foot" class="small text-muted-soft mb-0"></p></div>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -87,34 +118,61 @@
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
   const statusEl = document.getElementById('cra-status');
   const resultWrap = document.getElementById('cra-result');
-  const resultBody = document.getElementById('cra-result-body');
+  const modelPre = document.getElementById('cra-model-pre');
+  const aiPre = document.getElementById('cra-ai-pre');
+  const footEl = document.getElementById('cra-result-foot');
 
   function val(id) {
     const el = document.getElementById(id);
     return el ? (el.value || '').trim() : '';
   }
+  function numOrNull(id) {
+    const s = val(id);
+    if (!s) return null;
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : null;
+  }
 
   document.getElementById('cra-submit').addEventListener('click', async () => {
     statusEl.textContent = 'Probíhá…';
     resultWrap.classList.add('d-none');
-    resultBody.replaceChildren();
+    modelPre.textContent = '';
+    aiPre.textContent = '';
+    footEl.replaceChildren();
+
+    let histParsed = null;
+    const htRaw = val('historical_transactions');
+    if (htRaw) {
+      try { histParsed = JSON.parse(htRaw); } catch (e) {
+        statusEl.textContent = 'Chyba: historical_transactions musí být platný JSON pole.';
+        return;
+      }
+    }
 
     const payload = {
-      supplier_name: val('supplier_name'),
-      supplier_ico: val('supplier_ico'),
       anchor_name: val('anchor_name'),
       anchor_ico: val('anchor_ico'),
+      supplier_name: val('supplier_name'),
+      supplier_ico: val('supplier_ico'),
+      deal_id: val('deal_id') || null,
+      receivable_status: val('receivable_status') || null,
       invoice_amount: parseFloat(val('invoice_amount')),
-      requested_advance_pct: parseFloat(val('requested_advance_pct')),
+      due_date: val('due_date') || null,
+      anchor_rating: val('anchor_rating') || null,
+      requested_advance_pct: numOrNull('requested_advance_pct'),
+      data_mismatch: document.getElementById('data_mismatch').checked,
+      dispute: document.getElementById('dispute').checked,
+      existing_exposure_supplier: val('existing_exposure_supplier') || null,
+      existing_exposure_anchor: val('existing_exposure_anchor') || null,
+      total_portfolio_exposure: numOrNull('total_portfolio_exposure'),
+      historical_transactions: histParsed,
       revenue_latest_year: val('revenue_latest_year') || null,
       ebitda_latest_year: val('ebitda_latest_year') || null,
       profit_loss_latest_year: val('profit_loss_latest_year') || null,
       receivables: val('receivables') || null,
       payables: val('payables') || null,
       overdue_information: val('overdue_information') || null,
-      existing_exposure_supplier: val('existing_exposure_supplier') || null,
-      existing_exposure_anchor: val('existing_exposure_anchor') || null,
-      scoring_result: val('scoring_result'),
+      scoring_result: val('scoring_result') || null,
       notes: val('notes') || null,
       csrf_token: csrf,
     };
@@ -133,21 +191,14 @@
         return;
       }
       statusEl.textContent = 'Hotovo · run #' + data.run_id;
-      const pre = document.createElement('pre');
-      pre.className = 'small bg-light p-3 mb-0';
-      pre.style.maxHeight = '70vh';
-      pre.style.overflow = 'auto';
-      pre.textContent = JSON.stringify(data.result, null, 2);
-      resultBody.appendChild(pre);
-      const foot = document.createElement('p');
-      foot.className = 'small text-muted-soft mt-2 mb-0';
-      foot.appendChild(document.createTextNode('Uloženo — '));
+      modelPre.textContent = JSON.stringify(data.result.model_result || {}, null, 2);
+      aiPre.textContent = JSON.stringify(data.result.agent_interpretation || {}, null, 2);
+      footEl.appendChild(document.createTextNode('Uloženo — '));
       const a = document.createElement('a');
       a.href = '/credit-risk-agent/run/' + data.run_id;
-      a.textContent = 'Strukturovaný detail';
-      foot.appendChild(a);
-      foot.appendChild(document.createTextNode(' · JSON obsahuje všechny požadované sekce.'));
-      resultBody.appendChild(foot);
+      a.textContent = 'Auditní detail';
+      footEl.appendChild(a);
+      footEl.appendChild(document.createTextNode(' · Celý JSON včetně _precheck_legacy.'));
       resultWrap.classList.remove('d-none');
       window.location.hash = 'cra-result';
     } catch (e) {

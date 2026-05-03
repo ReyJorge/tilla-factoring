@@ -6,35 +6,59 @@
   <li class="breadcrumb-item active">Run #{{ run.id }}</li>
 </ol></nav>
 
+{% set out = run.full_output_json %}
+{% set mr = out['model_result'] if out is mapping and 'model_result' in out else {} %}
+{% set ai = out['agent_interpretation'] if out is mapping and 'agent_interpretation' in out else {} %}
+
 <div class="card tilla-card mb-4">
   <div class="card-header">Shrnutí auditu</div>
   <div class="card-body small row g-3">
     <div class="col-md-4"><span class="text-muted-soft">Vytvořeno</span><br><strong>{{ run.created_at.strftime('%d.%m.%Y %H:%M') }}</strong></div>
-    <div class="col-md-4"><span class="text-muted-soft">Doporučení</span><br><strong>{{ run.recommendation }}</strong></div>
-    <div class="col-md-4"><span class="text-muted-soft">Confidence</span><br><strong>{{ run.confidence_level }}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">Finální doporučení (UI)</span><br><strong>{{ run.recommendation }}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">Confidence (AI vrstva)</span><br><strong>{{ run.confidence_level }}</strong></div>
     <div class="col-md-6"><span class="text-muted-soft">Supplier</span><br>{{ run.supplier_name }} <span class="text-muted-soft">· IČ {{ run.supplier_ico }}</span></div>
     <div class="col-md-6"><span class="text-muted-soft">Anchor</span><br>{{ run.anchor_name }} <span class="text-muted-soft">· IČ {{ run.anchor_ico }}</span></div>
     <div class="col-md-4"><span class="text-muted-soft">Částka faktury</span><br>{{ run.invoice_amount|cs_money }}</div>
-    <div class="col-md-4"><span class="text-muted-soft">Scoring</span><br>{{ run.scoring_result }}</div>
+    <div class="col-md-4"><span class="text-muted-soft">Risk band (model)</span><br>{{ run.scoring_result }}</div>
+    {% if mr %}
+    <div class="col-md-4"><span class="text-muted-soft">Total score</span><br><strong>{{ mr.total_score }}</strong></div>
+    <div class="col-md-4"><span class="text-muted-soft">Rating gate</span><br>{{ mr.rating_gate }}</div>
+    <div class="col-md-4"><span class="text-muted-soft">Advance % (model)</span><br>{{ mr.recommended_advance_pct }}</div>
+    <div class="col-md-4"><span class="text-muted-soft">Fee % (model)</span><br>{{ mr.recommended_fee_pct }}</div>
+    <div class="col-12"><span class="text-muted-soft">Závěr schválení (model)</span><br>{{ mr.approval_conclusion }}</div>
+    {% endif %}
   </div>
 </div>
 
-{% set out = run.full_output_json %}
-<div class="card tilla-card mb-3"><div class="card-header">Structured output</div><div class="card-body small">
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card tilla-card h-100"><div class="card-header">Deterministický výstup</div>
+      <div class="card-body small p-0"><pre class="small bg-light p-3 mb-0 overflow-auto" style="max-height:380px">{{ mr | pretty_json }}</pre></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card tilla-card h-100"><div class="card-header">AI interpretace</div>
+      <div class="card-body small p-0"><pre class="small bg-light p-3 mb-0 overflow-auto" style="max-height:380px">{{ ai | pretty_json }}</pre></div>
+    </div>
+  </div>
+</div>
+
+{% if ai %}
+<div class="card tilla-card mb-3"><div class="card-header">Shrnutí interpretace</div><div class="card-body small">
   <dl class="row mb-0">
-    {% for key in ['recommendation','suggested_risk_grade','suggested_supplier_limit','suggested_anchor_exposure_limit','suggested_advance_rate','confidence_level','credit_memo_summary','rationale'] %}
-      {% if key in out %}
-      <dt class="col-sm-4 text-muted-soft">{{ key }}</dt><dd class="col-sm-8">{{ out[key] }}</dd>
+    {% for key in ['recommendation','risk_grade','confidence_level','credit_memo_summary'] %}
+      {% if key in ai %}
+      <dt class="col-sm-4 text-muted-soft">{{ key }}</dt><dd class="col-sm-8">{{ ai[key] }}</dd>
       {% endif %}
     {% endfor %}
   </dl>
 </div></div>
+{% endif %}
 
-{% if out.key_risks %}<div class="card tilla-card mb-3"><div class="card-header">Key risks</div><div class="card-body small"><ul class="mb-0">{% for x in out.key_risks %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
-{% if out.mitigants %}<div class="card tilla-card mb-3"><div class="card-header">Mitigants</div><div class="card-body small"><ul class="mb-0">{% for x in out.mitigants %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
-{% if out.missing_information %}<div class="card tilla-card mb-3"><div class="card-header">Missing information</div><div class="card-body small"><ul class="mb-0">{% for x in out.missing_information %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
-{% if out.conditions_before_funding %}<div class="card tilla-card mb-3"><div class="card-header">Conditions before funding</div><div class="card-body small"><ul class="mb-0">{% for x in out.conditions_before_funding %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
-{% if out.policy_references_used %}<div class="card tilla-card mb-3"><div class="card-header">Policy references used</div><div class="card-body small"><ul class="mb-0">{% for x in out.policy_references_used %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+{% if ai.key_risks %}<div class="card tilla-card mb-3"><div class="card-header">Key risks</div><div class="card-body small"><ul class="mb-0">{% for x in ai.key_risks %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+{% if ai.mitigants %}<div class="card tilla-card mb-3"><div class="card-header">Mitigants</div><div class="card-body small"><ul class="mb-0">{% for x in ai.mitigants %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+{% if ai.missing_information %}<div class="card tilla-card mb-3"><div class="card-header">Missing information</div><div class="card-body small"><ul class="mb-0">{% for x in ai.missing_information %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
+{% if ai.conditions_before_funding %}<div class="card tilla-card mb-3"><div class="card-header">Conditions before funding</div><div class="card-body small"><ul class="mb-0">{% for x in ai.conditions_before_funding %}<li>{{ x }}</li>{% endfor %}</ul></div></div>{% endif %}
 
 <details class="small text-muted-soft"><summary>Raw JSON (audit)</summary>
 <pre class="small bg-light p-3 mt-2 overflow-auto" style="max-height:320px">{{ run.full_output_json | pretty_json }}</pre>
